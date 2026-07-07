@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Fundación Alzamora",
+  "description": "Sitio interactivo y de impacto de la Fundación Alzamora, para canalizar donaciones, voluntariados y reportar necesidades en situación de calle en España y Chile.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
