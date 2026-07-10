@@ -5,7 +5,10 @@ import {
 } from 'lucide-react';
 
 // Types
-import { Region } from './types';
+import { Region, TransparencyStats } from './types';
+
+// API
+import { getStats } from './lib/api';
 
 // Components
 import Navbar from './components/Navbar';
@@ -16,6 +19,7 @@ import Stories from './components/Stories';
 import AboutUs from './components/AboutUs';
 import NeedReporter from './components/NeedReporter';
 import DonationModal from './components/DonationModal';
+import AdminPanel from './components/AdminPanel';
 
 // Mock Data
 import { IMAGES, LOGO_URL, STORIES } from './data';
@@ -26,55 +30,57 @@ export default function App() {
   const [isDonateOpen, setIsDonateOpen] = useState<boolean>(false);
   const [preselectedProgramTitle, setPreselectedProgramTitle] = useState<string | undefined>(undefined);
 
-  // Global Dynamic Stats (Simulated persistence)
-  const [mealsCount, setMealsCount] = useState<number>(5420);
-  const [shelterCount, setShelterCount] = useState<number>(120);
-  const [volunteersCount, setVolunteersCount] = useState<number>(300);
+  // Estadísticas reales obtenidas de la API (sin números inventados en localStorage)
+  const [stats, setStats] = useState<TransparencyStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState<boolean>(true);
 
-  // Load from local storage or set initial based on region
+  // Mensaje de retorno de la pasarela de pago (?donacion=exito|fallo)
+  const [donationResult, setDonationResult] = useState<'exito' | 'fallo' | null>(null);
+
+  // Mensaje de retorno de la suscripción mensual (?suscripcion=exito|fallo)
+  const [subscriptionResult, setSubscriptionResult] = useState<'exito' | 'fallo' | null>(null);
+
+  // Carga de estadísticas reales al montar la app
   useEffect(() => {
-    const defaultMeals = region === 'chile' ? 5420 : 8420;
-    const defaultShelter = region === 'chile' ? 120 : 240;
-    const defaultVolunteers = region === 'chile' ? 300 : 450;
+    const controller = new AbortController();
+    setStatsLoading(true);
+    getStats(controller.signal)
+      .then((data) => setStats(data))
+      .catch(() => setStats(null)) // Estado neutro: mostramos "—" en lugar de datos falsos
+      .finally(() => setStatsLoading(false));
+    return () => controller.abort();
+  }, []);
 
-    const storedMeals = localStorage.getItem(`alzamora_stat_meals_${region}`);
-    const storedShelter = localStorage.getItem(`alzamora_stat_shelter_${region}`);
-    const storedVolunteers = localStorage.getItem(`alzamora_stat_volunteers_${region}`);
+  // Lectura del retorno de la pasarela de pago (Webpay / PayPal) y de la suscripción mensual
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    let changed = false;
 
-    setMealsCount(storedMeals ? parseInt(storedMeals) : defaultMeals);
-    setShelterCount(storedShelter ? parseInt(storedShelter) : defaultShelter);
-    setVolunteersCount(storedVolunteers ? parseInt(storedVolunteers) : defaultVolunteers);
-  }, [region]);
-
-  const handleDonationSuccess = (amount: number, currency: string, isMonthly: boolean) => {
-    // Dynamically increase counters based on amount
-    let addedMeals = 0;
-    let addedKits = 0;
-    
-    if (currency === 'CLP') {
-      addedMeals = Math.floor(amount / 1300); // approx $1.300 CLP per hot breakfast
-      addedKits = Math.floor(amount / 10000);
-    } else {
-      addedMeals = Math.floor(amount / 1.5); // approx 1.5€ per hot breakfast
-      addedKits = Math.floor(amount / 10);
+    const result = params.get('donacion');
+    if (result === 'exito' || result === 'fallo') {
+      setDonationResult(result);
+      params.delete('donacion');
+      changed = true;
     }
 
-    const newMeals = mealsCount + (addedMeals || 5);
-    const newShelter = shelterCount + (addedKits || 1);
-    
-    setMealsCount(newMeals);
-    setShelterCount(newShelter);
-
-    localStorage.setItem(`alzamora_stat_meals_${region}`, newMeals.toString());
-    localStorage.setItem(`alzamora_stat_shelter_${region}`, newShelter.toString());
-
-    // Trigger local storage volunteer counts update if monthly sign-up
-    if (isMonthly) {
-      const newVol = volunteersCount + 1;
-      setVolunteersCount(newVol);
-      localStorage.setItem(`alzamora_stat_volunteers_${region}`, newVol.toString());
+    const subResult = params.get('suscripcion');
+    if (subResult === 'exito' || subResult === 'fallo') {
+      setSubscriptionResult(subResult);
+      params.delete('suscripcion');
+      changed = true;
     }
-  };
+
+    if (changed) {
+      // Limpiamos los query params de la URL sin recargar
+      const newQuery = params.toString();
+      const newUrl = window.location.pathname + (newQuery ? `?${newQuery}` : '');
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, []);
+
+  // Formatea un contador real; si no hay datos, muestra "—" (estado neutro)
+  const formatStat = (value: number | undefined) =>
+    typeof value === 'number' ? `+${value.toLocaleString()}` : '—';
 
   // Switch to volunteer tab with matched program pre-filled
   const handleSelectParticipate = (programTitle: string) => {
@@ -123,6 +129,106 @@ export default function App() {
         setRegion={setRegion} 
         onOpenDonate={() => setIsDonateOpen(true)}
       />
+
+      {/* Banner de retorno de la pasarela de pago */}
+      {donationResult && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 w-full">
+          {donationResult === 'exito' ? (
+            <div className="p-4 bg-green-50 border border-green-200 text-green-800 rounded-2xl flex items-start gap-3 animate-scale-up">
+              <CheckCircle className="w-6 h-6 text-green-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-bold text-sm">¡Gracias por tu donación!</p>
+                <p className="text-xs text-green-700 mt-0.5 leading-relaxed">
+                  Tu aporte se procesó correctamente. Recibirás un comprobante en tu correo. Con tu ayuda seguimos llegando a las calles con alimentos, abrigo y acompañamiento.
+                </p>
+              </div>
+              <button
+                onClick={() => setDonationResult(null)}
+                className="text-green-600 hover:text-green-800 shrink-0"
+                aria-label="Cerrar mensaje"
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <div className="p-4 bg-red-50 border border-red-200 text-red-800 rounded-2xl flex items-start gap-3 animate-scale-up">
+              <AlertCircle className="w-6 h-6 text-red-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-bold text-sm">No se pudo completar tu donación</p>
+                <p className="text-xs text-red-700 mt-0.5 leading-relaxed">
+                  El pago no se concretó o fue cancelado. No se realizó ningún cargo. Puedes intentarlo nuevamente cuando quieras.
+                </p>
+                <button
+                  onClick={() => {
+                    setDonationResult(null);
+                    setIsDonateOpen(true);
+                  }}
+                  className="mt-2 text-xs font-bold text-brand-red hover:text-red-700 underline"
+                >
+                  Reintentar donación
+                </button>
+              </div>
+              <button
+                onClick={() => setDonationResult(null)}
+                className="text-red-600 hover:text-red-800 shrink-0"
+                aria-label="Cerrar mensaje"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Banner de retorno de la suscripción mensual (?suscripcion=exito|fallo) */}
+      {subscriptionResult && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 w-full">
+          {subscriptionResult === 'exito' ? (
+            <div className="p-4 bg-green-50 border border-green-200 text-green-800 rounded-2xl flex items-start gap-3 animate-scale-up">
+              <CheckCircle className="w-6 h-6 text-green-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-bold text-sm">¡Tu aporte mensual quedó activo, gracias por ser socio!</p>
+                <p className="text-xs text-green-700 mt-0.5 leading-relaxed">
+                  Tu medio de pago quedó inscrito y renovaremos tu aporte automáticamente cada mes. Recibirás un comprobante en tu correo. Puedes cancelar tu suscripción cuando quieras escribiéndonos.
+                </p>
+              </div>
+              <button
+                onClick={() => setSubscriptionResult(null)}
+                className="text-green-600 hover:text-green-800 shrink-0"
+                aria-label="Cerrar mensaje"
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <div className="p-4 bg-red-50 border border-red-200 text-red-800 rounded-2xl flex items-start gap-3 animate-scale-up">
+              <AlertCircle className="w-6 h-6 text-red-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-bold text-sm">No pudimos activar tu aporte mensual</p>
+                <p className="text-xs text-red-700 mt-0.5 leading-relaxed">
+                  La inscripción de tu suscripción no se completó o fue cancelada. No se realizó ningún cargo. Puedes intentarlo nuevamente cuando quieras.
+                </p>
+                <button
+                  onClick={() => {
+                    setSubscriptionResult(null);
+                    setIsDonateOpen(true);
+                  }}
+                  className="mt-2 text-xs font-bold text-brand-red hover:text-red-700 underline"
+                >
+                  Reintentar suscripción
+                </button>
+              </div>
+              <button
+                onClick={() => setSubscriptionResult(null)}
+                className="text-red-600 hover:text-red-800 shrink-0"
+                aria-label="Cerrar mensaje"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Main Screen Content Router */}
       <main className="flex-1">
@@ -246,10 +352,14 @@ export default function App() {
                     <Coffee className="w-6 h-6" />
                   </div>
                   <span className="block text-3xl sm:text-4xl font-extrabold font-mono text-slate-900">
-                    +{mealsCount.toLocaleString()}
+                    {statsLoading ? (
+                      <span className="inline-block h-8 w-24 mx-auto bg-slate-100 rounded-md animate-pulse align-middle"></span>
+                    ) : (
+                      formatStat(stats?.mealsCount)
+                    )}
                   </span>
                   <span className="text-xs font-bold text-slate-500 uppercase tracking-widest font-sans block">
-                    {isChile ? 'comidas servidas en chile' : 'desayunos solidarios servidos'}
+                    comidas servidas
                   </span>
                 </div>
 
@@ -258,10 +368,14 @@ export default function App() {
                     <Heart className="w-6 h-6 fill-brand-red" />
                   </div>
                   <span className="block text-3xl sm:text-4xl font-extrabold font-mono text-slate-900">
-                    +{shelterCount.toLocaleString()}
+                    {statsLoading ? (
+                      <span className="inline-block h-8 w-24 mx-auto bg-slate-100 rounded-md animate-pulse align-middle"></span>
+                    ) : (
+                      formatStat(stats?.kitsCount)
+                    )}
                   </span>
                   <span className="text-xs font-bold text-slate-500 uppercase tracking-widest font-sans block">
-                    {isChile ? 'personas refugiadas asistidas' : 'personas apoyadas'}
+                    kits de dignidad entregados
                   </span>
                 </div>
 
@@ -270,10 +384,14 @@ export default function App() {
                     <Users className="w-6 h-6" />
                   </div>
                   <span className="block text-3xl sm:text-4xl font-extrabold font-mono text-slate-900">
-                    +{volunteersCount.toLocaleString()}
+                    {statsLoading ? (
+                      <span className="inline-block h-8 w-24 mx-auto bg-slate-100 rounded-md animate-pulse align-middle"></span>
+                    ) : (
+                      formatStat(stats?.volunteersCount)
+                    )}
                   </span>
                   <span className="text-xs font-bold text-slate-500 uppercase tracking-widest font-sans block">
-                    {isChile ? 'voluntarios activos en chile' : 'voluntarios activos'}
+                    voluntarios activos
                   </span>
                 </div>
 
@@ -376,16 +494,20 @@ export default function App() {
                     <ShieldCheck className="w-8 h-8" />
                   </div>
                   <div>
-                    <h4 className="text-lg font-bold font-display text-slate-800">Transparencia Total de Alzamora</h4>
+                    <h4 className="text-lg font-bold font-display text-slate-800">Compromiso con la Transparencia</h4>
                     <p className="text-xs text-slate-500 leading-relaxed font-sans mt-0.5">
-                      Contamos con un protocolo auditado de destino de fondos. El 100% de las donaciones particulares financia compras de alimentos y kits entregados directamente en la calle.
+                      Publicamos el detalle de nuestros ingresos y gastos. Puedes revisar nuestro registro de donaciones y las entregas realizadas para ver cómo se usa tu aporte.
                     </p>
                   </div>
                 </div>
                 <div className="shrink-0 flex items-center gap-2">
-                  <span className="text-xs font-bold font-mono text-emerald-700 bg-emerald-100/60 px-3 py-1.5 rounded-xl border border-emerald-200">
-                    Sello de Transparencia 100%
-                  </span>
+                  <button
+                    id="transparency-banner-cta"
+                    onClick={() => setCurrentTab('voluntarios')}
+                    className="text-xs font-bold font-mono text-emerald-700 bg-emerald-100/60 px-3 py-1.5 rounded-xl border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                  >
+                    Ver registro de fondos
+                  </button>
                 </div>
               </div>
             </section>
@@ -479,6 +601,10 @@ export default function App() {
           <NeedReporter region={region} />
         )}
 
+        {currentTab === 'admin' && (
+          <AdminPanel />
+        )}
+
       </main>
 
       {/* Shared Donation modal popup */}
@@ -486,7 +612,6 @@ export default function App() {
         isOpen={isDonateOpen} 
         onClose={() => setIsDonateOpen(false)} 
         region={region}
-        onDonationSuccess={handleDonationSuccess}
       />
 
       {/* Standard brand footer */}

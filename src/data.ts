@@ -1,7 +1,15 @@
 import { Story, Route, Region } from './types';
 
+// TODO: Las imágenes alojadas en lh3.googleusercontent.com/aida provienen de
+// Google AI Studio y son URLs TEMPORALES que van a expirar (dejarán de cargar).
+// Antes de producción, sube estos assets (logo e imágenes) a un hosting propio
+// o CDN (por ejemplo S3/Cloudinary/almacenamiento estático del proyecto) y
+// reemplaza estas URLs por las definitivas.
 export const LOGO_URL = "https://lh3.googleusercontent.com/aida/AP1WRLt66vStL57IdxGojDNpyLfFDymD2cWdIlviXFv4uezCgquZu7ZuzIuToUMfU_07jusjbcRUO9SNf7irup-HACCpHtOQpSe9AzC_EJjhWZP0jvyAryct5M276ReE5Cu4AUDK7pUgXo1hPyoghZFlg-BYPzIIfOiJnf8q0fhuZTT9SOWpr81fJXgQ7sEYpXv5A9nPQ9J7jhbkc7FKqsXs4xzORoB7RQaaKcH4Sf1H5FFx985fgntekefyQQ";
 
+// TODO: Ver nota anterior. Todas las URLs lh3.googleusercontent.com/aida-public
+// de este objeto son temporales de Google AI Studio y deben migrarse a hosting
+// propio antes de publicar; de lo contrario las imágenes dejarán de mostrarse.
 export const IMAGES = {
   heroGeneral: "https://lh3.googleusercontent.com/aida-public/AB6AXuARGMg4g5G5frQiFbSFKrRXEcXwLVqK-Pi_AhagUwOpB3eyZW5kDK1DpHq-AdZuuiozYiqGyNXjR3nI82tu_Q6MC6DruAD1ZvXzuWQS7UZTKftRwOr0eTEl-VlQLg-6wuBGGUdESUBQbiqh593jIU6ppw8AYraRqnxidBXQsvEPggipQzWHpl6JClpTs6ZAuk87lUmoblj5Uh-Qhk_j-FFRVGTu8Da08HENVq44qzSs-Hs-3d2kbguFVR1gzdLDkiEwzPGZsWaCCFw",
   volunteersHero: "https://lh3.googleusercontent.com/aida-public/AB6AXuCZEQwdN9hXGwl8FtGVyrAJr0miqgc71vz1oJcBhlW0IqcljVGnFNUzUMxl4Mw-A6JfPRxR7JVZpPBGUE36k1qxXTffsIfZWsHTlQStfY4_VNYUPxNJGkRyNP0Bt7A9_ExlvNDBwEWvdj1ZSpTfA1c2jVrN0oS1X2haokZBQsYbCXJX8oP4XCCoi6NW7CCelEXlt0SLJCChU2JqN6PdPXpjkXWOol6PdzmOkto7WojLotuoVHVs8a48U6WeX3r0SMNhOz2HTgBwd98",

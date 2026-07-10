@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Award, CheckCircle, Handshake, ShieldCheck, Heart, PieChart, Users, Check, AlertCircle } from 'lucide-react';
-import { Region, VolunteerSignup } from '../types';
+import { Award, CheckCircle, Handshake, ShieldCheck, Heart, Check, AlertCircle } from 'lucide-react';
+import { Ledger, Region } from '../types';
 import { IMAGES } from '../data';
+import { createVolunteer, getLedger, ApiError } from '../lib/api';
 
 interface VolunteersProps {
   region: Region;
@@ -15,9 +16,16 @@ export default function Volunteers({ region, preselectedProgramTitle, onClearPre
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [commune, setCommune] = useState('');
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [message, setMessage] = useState('');
+
   const [success, setSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Datos reales del registro contable (transparencia)
+  const [ledger, setLedger] = useState<Ledger | null>(null);
 
   // Default volunteering categories
   const categories = [
@@ -29,9 +37,8 @@ export default function Volunteers({ region, preselectedProgramTitle, onClearPre
   // Set pre-selected interest if navigating from a program CTA
   useEffect(() => {
     if (preselectedProgramTitle) {
-      // Try to match category
-      const matched = categories.find(c => 
-        preselectedProgramTitle.toLowerCase().includes(c.label.toLowerCase()) || 
+      const matched = categories.find(c =>
+        preselectedProgramTitle.toLowerCase().includes(c.label.toLowerCase()) ||
         c.label.toLowerCase().includes(preselectedProgramTitle.toLowerCase())
       );
       if (matched && !selectedInterests.includes(matched.label)) {
@@ -40,7 +47,17 @@ export default function Volunteers({ region, preselectedProgramTitle, onClearPre
         setSelectedInterests([preselectedProgramTitle]);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preselectedProgramTitle]);
+
+  // Cargamos el registro contable real para la sección de transparencia
+  useEffect(() => {
+    const controller = new AbortController();
+    getLedger(controller.signal)
+      .then((data) => setLedger(data))
+      .catch(() => setLedger(null)); // Si falla, mostramos un texto referencial honesto
+    return () => controller.abort();
+  }, []);
 
   const handleInterestToggle = (label: string) => {
     if (selectedInterests.includes(label)) {
@@ -50,44 +67,48 @@ export default function Volunteers({ region, preselectedProgramTitle, onClearPre
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage('');
     if (!fullName || !phone || !email) {
-      alert('Por favor, completa tus datos de contacto principales.');
+      setErrorMessage('Por favor, completa tus datos de contacto principales.');
       return;
     }
 
-    const newSignup: VolunteerSignup = {
-      id: `signup-${Date.now()}`,
-      fullName,
-      phone,
-      email,
-      areasInterest: selectedInterests,
-      message,
-      region,
-      timestamp: new Date().toLocaleString()
-    };
-
-    // Save to LocalStorage list of signups
-    const existing = localStorage.getItem('alzamora_signups') || '[]';
+    setIsSubmitting(true);
     try {
-      const signups = JSON.parse(existing);
-      signups.push(newSignup);
-      localStorage.setItem('alzamora_signups', JSON.stringify(signups));
-    } catch (e) {
-      localStorage.setItem('alzamora_signups', JSON.stringify([newSignup]));
-    }
+      // La fuente de verdad es la API: registramos la postulación en el backend.
+      await createVolunteer({
+        fullName,
+        phone,
+        email,
+        commune,
+        areasInterest: selectedInterests,
+        message,
+      });
 
-    // Reset Form
-    setFullName('');
-    setPhone('');
-    setEmail('');
-    setSelectedInterests([]);
-    setMessage('');
-    setSuccess(true);
-    if (onClearPreselection) onClearPreselection();
-    setTimeout(() => setSuccess(false), 5000);
+      // Reset del formulario
+      setFullName('');
+      setPhone('');
+      setEmail('');
+      setCommune('');
+      setSelectedInterests([]);
+      setMessage('');
+      setSuccess(true);
+      if (onClearPreselection) onClearPreselection();
+      setTimeout(() => setSuccess(false), 6000);
+    } catch (err) {
+      const msg =
+        err instanceof ApiError
+          ? err.message
+          : 'No pudimos registrar tu postulación. Inténtalo nuevamente en unos minutos.';
+      setErrorMessage(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const clp = (n: number) => `$${n.toLocaleString('es-CL')}`;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-16 animate-fade-in">
@@ -156,8 +177,18 @@ export default function Volunteers({ region, preselectedProgramTitle, onClearPre
                 <div>
                   <p className="font-bold">¡Postulación Recibida!</p>
                   <p className="font-medium text-green-700 mt-1">
-                    Muchas gracias por tu generosidad. Tu postulación ha sido guardada con éxito en nuestro sistema de acopio local. Nos pondremos en contacto contigo pronto para coordinar tu inducción.
+                    Muchas gracias por tu generosidad. Tu postulación fue registrada en nuestro sistema. Nos pondremos en contacto contigo pronto para coordinar tu inducción.
                   </p>
+                </div>
+              </div>
+            )}
+
+            {errorMessage && (
+              <div className="p-4 mb-6 bg-red-50 border border-red-200 text-red-800 rounded-xl text-xs font-semibold flex items-start gap-2.5 animate-scale-up">
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold">No pudimos enviar tu postulación</p>
+                  <p className="font-medium text-red-700 mt-1">{errorMessage}</p>
                 </div>
               </div>
             )}
@@ -205,17 +236,30 @@ export default function Volunteers({ region, preselectedProgramTitle, onClearPre
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Correo electrónico *</label>
-                <input
-                  id="volunteer-email"
-                  type="email"
-                  required
-                  placeholder="ejemplo@correo.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Correo electrónico *</label>
+                  <input
+                    id="volunteer-email"
+                    type="email"
+                    required
+                    placeholder="ejemplo@correo.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Comuna / Ciudad</label>
+                  <input
+                    id="volunteer-commune"
+                    type="text"
+                    placeholder="Ej. Valparaíso, Viña del Mar"
+                    value={commune}
+                    onChange={(e) => setCommune(e.target.value)}
+                    className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue"
+                  />
+                </div>
               </div>
 
               {/* Checkboxes Areas of Interest */}
@@ -261,10 +305,20 @@ export default function Volunteers({ region, preselectedProgramTitle, onClearPre
               <button
                 id="submit-volunteer-btn"
                 type="submit"
-                className="w-full bg-brand-blue hover:bg-blue-900 text-white font-bold py-3.5 rounded-xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2"
+                disabled={isSubmitting}
+                className="w-full bg-brand-blue hover:bg-blue-900 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2"
               >
-                <Heart className="w-4 h-4 fill-white" />
-                <span>Enviar Postulación Voluntaria</span>
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <Heart className="w-4 h-4 fill-white" />
+                    <span>Enviar Postulación Voluntaria</span>
+                  </>
+                )}
               </button>
 
             </form>
@@ -273,7 +327,7 @@ export default function Volunteers({ region, preselectedProgramTitle, onClearPre
 
       </div>
 
-      {/* Transparency and Funds section from Image 3 lower section */}
+      {/* Transparencia y Destino de Fondos (datos reales del ledger cuando existen) */}
       <div className="bg-slate-50 border border-slate-200/50 rounded-2xl p-6 sm:p-8 space-y-8">
         
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b pb-5 border-slate-200">
@@ -283,61 +337,63 @@ export default function Volunteers({ region, preselectedProgramTitle, onClearPre
               Transparencia y Destino de Fondos
             </h3>
             <p className="text-xs text-slate-500 font-sans mt-0.5">
-              Cada donación se transforma íntegramente en recursos y acompañamiento directo para las personas en situación de calle.
+              Publicamos el detalle de nuestros ingresos y gastos para que veas cómo se usa cada aporte.
             </p>
           </div>
-          
+
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold border border-emerald-200">
             <Award className="w-4.5 h-4.5 text-emerald-600 fill-emerald-600/10" />
-            <span>Sello de Transparencia Certificado</span>
+            <span>Registro público de fondos</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
-          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-brand-blue uppercase tracking-wider">Alimentación</span>
-              <span className="text-base font-bold text-slate-800 font-mono">50%</span>
+        {ledger ? (
+          <div className="space-y-6">
+            {/* Resumen de ingresos, gastos y balance reales */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
+                <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider block">Ingresos totales</span>
+                <span className="text-xl font-bold text-slate-800 font-mono">{clp(ledger.totalRaisedCLP)}</span>
+              </div>
+              <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
+                <span className="text-[11px] font-bold text-brand-red uppercase tracking-wider block">Gastos totales</span>
+                <span className="text-xl font-bold text-slate-800 font-mono">{clp(ledger.totalExpensesCLP)}</span>
+              </div>
+              <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
+                <span className="text-[11px] font-bold text-brand-blue uppercase tracking-wider block">Balance disponible</span>
+                <span className="text-xl font-bold text-slate-800 font-mono">{clp(ledger.balanceCLP)}</span>
+              </div>
             </div>
-            {/* Visual 50% bar */}
-            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-brand-blue rounded-full" style={{ width: '50%' }}></div>
-            </div>
-            <p className="text-[11px] text-slate-500 leading-normal font-sans">
-              Destinado a insumos de desayunos solidarios, pan, café, sopas calientes y raciones de alimento para las brigadas de calle diarias.
+
+            {/* Gastos por categoría (datos reales) */}
+            {ledger.expensesByCategory && Object.keys(ledger.expensesByCategory).length > 0 && (
+              <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs space-y-3">
+                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Gastos por categoría</span>
+                {Object.entries(ledger.expensesByCategory).map(([cat, rawAmount]) => {
+                  const amount = Number(rawAmount) || 0;
+                  const pct = ledger.totalExpensesCLP > 0 ? Math.round((amount / ledger.totalExpensesCLP) * 100) : 0;
+                  return (
+                    <div key={cat} className="space-y-1">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-semibold text-slate-600 capitalize">{cat}</span>
+                        <span className="font-mono text-slate-800">{clp(amount)} · {pct}%</span>
+                      </div>
+                      <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-brand-blue rounded-full" style={{ width: `${pct}%` }}></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
+            <p className="text-xs text-slate-600 leading-relaxed font-sans">
+              Estamos publicando nuestro registro detallado de ingresos y gastos. A modo <strong>referencial</strong>, orientamos los fondos principalmente a alimentación (desayunos y rutas de calle), kits de dignidad y abrigo, y los costos de operación y logística necesarios para llegar a cada punto. Puedes escribirnos para solicitar el detalle actualizado.
             </p>
           </div>
-
-          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-brand-yellow uppercase tracking-wider">Educación y Cultura</span>
-              <span className="text-base font-bold text-slate-800 font-mono">30%</span>
-            </div>
-            {/* Visual 30% bar */}
-            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-brand-yellow rounded-full" style={{ width: '30%' }}></div>
-            </div>
-            <p className="text-[11px] text-slate-500 leading-normal font-sans">
-              Financia la compra de literatura motivacional, Biblias de estudio, encuentros grupales de fe y programas de consejería y reinserción.
-            </p>
-          </div>
-
-          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-brand-red uppercase tracking-wider">Operación y Logística</span>
-              <span className="text-base font-bold text-slate-800 font-mono">20%</span>
-            </div>
-            {/* Visual 20% bar */}
-            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-brand-red rounded-full" style={{ width: '20%' }}></div>
-            </div>
-            <p className="text-[11px] text-slate-500 leading-normal font-sans">
-              Cubre combustible para las furgonetas de reparto, arriendo de bodegas de acopio y mantenimiento de termos de grado industrial.
-            </p>
-          </div>
-
-        </div>
+        )}
 
       </div>
 

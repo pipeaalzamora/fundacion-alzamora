@@ -148,7 +148,7 @@ export default function Footer({ region, onOpenDonate, setCurrentTab }: FooterPr
 
             <div className="flex items-center gap-2 p-2.5 bg-emerald-950/40 border border-emerald-900/50 rounded-lg text-emerald-400 text-xs">
               <Award className="w-4 h-4 text-emerald-400 fill-emerald-400/20" />
-              <span className="font-semibold">Sello de Transparencia 100%</span>
+              <span className="font-semibold">Publicamos ingresos y gastos</span>
             </div>
           </div>
 
@@ -159,10 +159,18 @@ export default function Footer({ region, onOpenDonate, setCurrentTab }: FooterPr
           <p>
             &copy; {new Date().getFullYear()} Fundación Alzamora. Todos los derechos reservados.
           </p>
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center">
             <a href="#" className="hover:text-slate-300 transition-colors">Política de Privacidad</a>
             <a href="#" className="hover:text-slate-300 transition-colors">Términos de Servicio</a>
             <a href="#" className="hover:text-slate-300 transition-colors">Canal Ético</a>
+            <button
+              id="footer-admin-link"
+              onClick={() => setCurrentTab('admin')}
+              className="hover:text-slate-300 transition-colors text-slate-600"
+              title="Acceso interno para el equipo de la fundación"
+            >
+              Administración
+            </button>
           </div>
         </div>
       </div>

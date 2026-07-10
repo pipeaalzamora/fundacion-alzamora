@@ -1,131 +1,91 @@
-import React, { useState, useEffect } from 'react';
-import { AlertCircle, MapPin, CheckCircle2, Navigation, MessageSquare, Phone, User, Clock, Check } from 'lucide-react';
-import { NeedReport, NeedType, Region } from '../types';
+import React, { useState } from 'react';
+import { AlertCircle, MapPin, CheckCircle2, Navigation, Phone, User, Clock, Send } from 'lucide-react';
+import { NeedType, Region } from '../types';
+import { createNeedReport, ApiError } from '../lib/api';
 
 interface NeedReporterProps {
   region: Region;
   onNewReportAdded?: () => void;
 }
 
+// Reporte enviado por el propio usuario durante esta sesión.
+// NO persistimos ni mostramos reportes de terceros: la lista completa
+// es privada y solo la puede ver el equipo administrador en el backend.
+interface SessionReport {
+  id: string;
+  location: string;
+  cityCommune: string;
+  needType: NeedType;
+  description: string;
+  timestamp: string;
+}
+
 export default function NeedReporter({ region, onNewReportAdded }: NeedReporterProps) {
   const isChile = region === 'chile';
 
-  // Initial dummy needs to populate the list with realistic data
-  const getInitialReports = (): NeedReport[] => {
-    return [
-      {
-        id: "report-1",
-        location: "Plaza Italia, salida metro Baquedano, bajo el árbol grande",
-        cityCommune: isChile ? "Providencia, Santiago" : "Centro, Madrid",
-        needType: "abrigo",
-        description: "Adulto mayor tiritando de frío, requiere frazadas térmicas o parka gruesa. Se ve muy desprotegido.",
-        contactName: "Catalina Muñoz",
-        contactPhone: isChile ? "+56 9 8833 2211" : "+34 612 345 678",
-        region: region,
-        status: "pendiente",
-        timestamp: new Date(Date.now() - 3600000 * 2).toLocaleString() // 2 hours ago
-      },
-      {
-        id: "report-2",
-        location: "Av. Argentina con Colón, paradero de micros",
-        cityCommune: isChile ? "Valparaíso" : "Sevilla",
-        needType: "comida",
-        description: "Persona en situación de calle solicita alimento y agua. Refiere no haber comido en todo el día.",
-        contactName: "Gonzalo Retamal",
-        contactPhone: isChile ? "+56 9 7711 5566" : "+34 689 111 222",
-        region: region,
-        status: "en_ruta",
-        timestamp: new Date(Date.now() - 3600000 * 4).toLocaleString() // 4 hours ago
-      },
-      {
-        id: "report-3",
-        location: isChile ? "Estación Central, afuera del terminal de buses sur" : "Atocha, cerca de la estación de tren",
-        cityCommune: isChile ? "Estación Central, Santiago" : "Madrid",
-        needType: "salud",
-        description: "Joven con una herida visible en su pierna derecha. Requiere curación básica y un kit de desinfección.",
-        contactName: "Marcos Toledo",
-        region: region,
-        status: "atendido",
-        timestamp: new Date(Date.now() - 3600000 * 24).toLocaleString() // Yesterday
-      }
-    ];
-  };
-
-  const [reports, setReports] = useState<NeedReport[]>([]);
+  const [sessionReports, setSessionReports] = useState<SessionReport[]>([]);
   const [location, setLocation] = useState('');
   const [cityCommune, setCityCommune] = useState('');
   const [needType, setNeedType] = useState<NeedType>('comida');
   const [description, setDescription] = useState('');
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
-  
+
   const [successMessage, setSuccessMessage] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Load from local storage or set initial
-  useEffect(() => {
-    const stored = localStorage.getItem(`alzamora_needs_${region}`);
-    if (stored) {
-      try {
-        setReports(JSON.parse(stored));
-      } catch (e) {
-        setReports(getInitialReports());
-      }
-    } else {
-      const initial = getInitialReports();
-      setReports(initial);
-      localStorage.setItem(`alzamora_needs_${region}`, JSON.stringify(initial));
-    }
-  }, [region]);
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage('');
     if (!location || !cityCommune || !description) {
-      alert(isChile ? 'Por favor completa los campos principales' : 'Por favor completa los campos principales');
+      setErrorMessage('Por favor completa los campos principales (ubicación, ciudad y descripción).');
       return;
     }
 
-    const newReport: NeedReport = {
-      id: `report-${Date.now()}`,
-      location,
-      cityCommune,
-      needType,
-      description,
-      contactName: contactName || undefined,
-      contactPhone: contactPhone || undefined,
-      region,
-      status: 'pendiente',
-      timestamp: new Date().toLocaleString()
-    };
+    setIsSubmitting(true);
+    try {
+      // Registramos el reporte en el backend (POST real).
+      const { id } = await createNeedReport({
+        location,
+        cityCommune,
+        needType,
+        description,
+        contactName: contactName || undefined,
+        contactPhone: contactPhone || undefined,
+      });
 
-    const updated = [newReport, ...reports];
-    setReports(updated);
-    localStorage.setItem(`alzamora_needs_${region}`, JSON.stringify(updated));
+      // Guardamos SOLO el reporte del propio usuario en memoria de sesión.
+      const mine: SessionReport = {
+        id: id || `session-${Date.now()}`,
+        location,
+        cityCommune,
+        needType,
+        description,
+        timestamp: new Date().toLocaleString(),
+      };
+      setSessionReports((prev) => [mine, ...prev]);
 
-    // Reset Form
-    setLocation('');
-    setCityCommune('');
-    setNeedType('comida');
-    setDescription('');
-    setContactName('');
-    setContactPhone('');
+      // Reset del formulario
+      setLocation('');
+      setCityCommune('');
+      setNeedType('comida');
+      setDescription('');
+      setContactName('');
+      setContactPhone('');
 
-    setSuccessMessage(true);
-    if (onNewReportAdded) {
-      onNewReportAdded();
+      setSuccessMessage(true);
+      if (onNewReportAdded) onNewReportAdded();
+      setTimeout(() => setSuccessMessage(false), 6000);
+    } catch (err) {
+      const msg =
+        err instanceof ApiError
+          ? err.message
+          : 'No pudimos enviar tu alerta. Inténtalo nuevamente en unos minutos.';
+      setErrorMessage(msg);
+    } finally {
+      setIsSubmitting(false);
     }
-    setTimeout(() => setSuccessMessage(false), 5000);
-  };
-
-  // Allow simulating change of status to show interactive dispatch!
-  const toggleStatus = (id: string, newStatus: 'pendiente' | 'en_ruta' | 'atendido') => {
-    const updated = reports.map(r => {
-      if (r.id === id) {
-        return { ...r, status: newStatus };
-      }
-      return r;
-    });
-    setReports(updated);
-    localStorage.setItem(`alzamora_needs_${region}`, JSON.stringify(updated));
   };
 
   const getNeedBadge = (type: NeedType) => {
@@ -179,8 +139,18 @@ export default function NeedReporter({ region, onNewReportAdded }: NeedReporterP
                 <div>
                   <p className="font-bold">¡Alerta Recibida con Éxito!</p>
                   <p className="font-medium text-green-700 mt-1">
-                    La alerta ha sido guardada en la consola local de despacho. Puedes visualizarla y simular su despacho en la lista de la derecha.
+                    Tu reporte fue enviado a nuestro equipo. Coordinaremos una brigada para acudir al punto indicado en la próxima ruta disponible. Gracias por tu solidaridad.
                   </p>
+                </div>
+              </div>
+            )}
+
+            {errorMessage && (
+              <div className="p-4 mb-5 bg-red-50 border border-red-200 text-red-800 rounded-xl text-xs font-semibold flex items-start gap-2 animate-scale-up">
+                <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold">No pudimos enviar tu alerta</p>
+                  <p className="font-medium text-red-700 mt-1">{errorMessage}</p>
                 </div>
               </div>
             )}
@@ -295,128 +265,84 @@ export default function NeedReporter({ region, onNewReportAdded }: NeedReporterP
               <button
                 id="submit-alert-button"
                 type="submit"
-                className="w-full bg-brand-red hover:bg-red-600 text-white font-bold py-3 px-4 rounded-xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2"
+                disabled={isSubmitting}
+                className="w-full bg-brand-red hover:bg-red-600 disabled:opacity-50 text-white font-bold py-3 px-4 rounded-xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2"
               >
-                <AlertCircle className="w-4 h-4 fill-white text-brand-red" />
-                <span>{isChile ? 'Enviar Alerta de Calle' : 'Report Urgent Need'}</span>
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="w-4 h-4 fill-white text-brand-red" />
+                    <span>{isChile ? 'Enviar Alerta de Calle' : 'Report Urgent Need'}</span>
+                  </>
+                )}
               </button>
 
             </form>
           </div>
         </div>
 
-        {/* Dashboard / Active reports Feed column */}
+        {/* Columna: solo los reportes que el propio usuario envió en esta sesión */}
         <div className="lg:col-span-7 space-y-4">
           <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold font-display text-slate-800 flex items-center gap-2">
                 <Clock className="w-5 h-5 text-brand-blue" />
-                Consola de Alertas en Tiempo Real
+                Tus Alertas Enviadas
               </h3>
               <span className="text-xs font-semibold font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                {reports.length} reportadas
+                {sessionReports.length} en esta sesión
               </span>
             </div>
 
-            <p className="text-xs text-slate-500 leading-relaxed mb-5">
-              Simula la gestión de las brigadas móviles de la Fundación. Haz clic en las etiquetas de estado en cada reporte para despachar voluntarios o marcar la alerta como atendida.
-            </p>
-
-            <div className="space-y-4 overflow-y-auto max-h-[520px] pr-1">
-              {reports.map((report) => (
-                <div 
-                  key={report.id} 
-                  className={`p-4 border rounded-2xl transition-all ${
-                    report.status === 'atendido'
-                      ? 'bg-slate-50/50 border-slate-200 opacity-80'
-                      : report.status === 'en_ruta'
-                        ? 'bg-amber-50/40 border-amber-200'
-                        : 'bg-white border-slate-100 shadow-xs'
-                  }`}
-                >
-                  <div className="flex flex-col sm:flex-row justify-between items-start gap-2.5 mb-2 pb-2 border-b border-dashed border-slate-100">
-                    <div className="space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {getNeedBadge(report.needType)}
-                        <span className="text-[10px] font-bold text-slate-400 font-mono">
-                          {report.timestamp}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 text-slate-700 text-xs font-bold font-sans">
-                        <MapPin className="w-3.5 h-3.5 text-brand-red shrink-0" />
-                        <span>{report.location}</span>
-                      </div>
-                      <span className="text-[10px] text-slate-400 font-semibold block">{report.cityCommune}</span>
-                    </div>
-
-                    {/* Simulation controls */}
-                    <div className="flex flex-col items-end gap-1 shrink-0">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Simular Estado</span>
-                      <div className="flex gap-1 bg-slate-100 p-0.5 rounded-lg border">
-                        <button
-                          id={`sim-status-pendiente-${report.id}`}
-                          onClick={() => toggleStatus(report.id, 'pendiente')}
-                          className={`px-2 py-0.5 text-[9px] font-bold rounded-md ${report.status === 'pendiente' ? 'bg-red-500 text-white shadow-xs' : 'text-slate-600'}`}
-                        >
-                          Pendiente
-                        </button>
-                        <button
-                          id={`sim-status-enruta-${report.id}`}
-                          onClick={() => toggleStatus(report.id, 'en_ruta')}
-                          className={`px-2 py-0.5 text-[9px] font-bold rounded-md ${report.status === 'en_ruta' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600'}`}
-                        >
-                          En Ruta 🚚
-                        </button>
-                        <button
-                          id={`sim-status-atendido-${report.id}`}
-                          onClick={() => toggleStatus(report.id, 'atendido')}
-                          className={`px-2 py-0.5 text-[9px] font-bold rounded-md ${report.status === 'atendido' ? 'bg-green-600 text-white shadow-xs' : 'text-slate-600'}`}
-                        >
-                          Atendido ✓
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-slate-700 leading-relaxed italic bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    "{report.description}"
-                  </p>
-
-                  {/* Contact info metadata if available */}
-                  {(report.contactName || report.contactPhone) && (
-                    <div className="mt-3 flex items-center gap-3 text-[10px] text-slate-500 font-medium">
-                      <span>Reportado por: <strong>{report.contactName || 'Anónimo'}</strong></span>
-                      {report.contactPhone && (
-                        <span className="flex items-center gap-1 text-brand-blue">
-                          <Phone className="w-3 h-3" /> {report.contactPhone}
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Process flow indicator */}
-                  <div className="mt-3.5 flex items-center gap-2">
-                    {report.status === 'pendiente' && (
-                      <span className="text-[11px] text-red-600 bg-red-50 px-2.5 py-1 rounded-full font-bold flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> En cola de despacho - Pendiente de brigada móvil.
-                      </span>
-                    )}
-                    {report.status === 'en_ruta' && (
-                      <span className="text-[11px] text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full font-bold flex items-center gap-1.5 animate-pulse">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                        🚚 Brigada Alzamora está saliendo hacia la zona reportada.
-                      </span>
-                    )}
-                    {report.status === 'atendido' && (
-                      <span className="text-[11px] text-green-700 bg-green-50 px-2.5 py-1 rounded-full font-bold flex items-center gap-1">
-                        <Check className="w-3.5 h-3.5 text-green-600" /> ¡Atendido! Se proveyó abrigo, alimentación y apoyo.
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
+            {/* Nota de privacidad */}
+            <div className="p-3.5 mb-5 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-2 text-[11px] text-slate-600 leading-relaxed">
+              <AlertCircle className="w-4 h-4 text-brand-blue shrink-0 mt-0.5" />
+              <span>
+                Por privacidad, aquí solo ves las alertas que <strong>tú</strong> has enviado en esta visita. Los reportes de otras personas contienen datos sensibles y solo son gestionados de forma reservada por nuestro equipo.
+              </span>
             </div>
 
+            {sessionReports.length === 0 ? (
+              <div className="text-center py-10 px-4">
+                <div className="w-14 h-14 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Send className="w-6 h-6" />
+                </div>
+                <p className="text-sm font-semibold text-slate-600">Aún no has enviado alertas</p>
+                <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto leading-relaxed">
+                  Cuando envíes una alerta desde el formulario, aparecerá aquí como confirmación de tu reporte.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4 overflow-y-auto max-h-[520px] pr-1">
+                {sessionReports.map((report) => (
+                  <div key={report.id} className="p-4 border border-slate-100 rounded-2xl shadow-xs bg-white">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      {getNeedBadge(report.needType)}
+                      <span className="text-[10px] font-bold text-slate-400 font-mono">{report.timestamp}</span>
+                      <span className="ml-auto text-[11px] text-green-700 bg-green-50 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Enviada
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 text-slate-700 text-xs font-bold font-sans">
+                      <MapPin className="w-3.5 h-3.5 text-brand-red shrink-0" />
+                      <span>{report.location}</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-semibold block mb-2">{report.cityCommune}</span>
+                    <p className="text-xs text-slate-700 leading-relaxed italic bg-slate-50 p-3 rounded-xl border border-slate-100">
+                      "{report.description}"
+                    </p>
+                    <p className="mt-3 text-[11px] text-slate-500 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                      En revisión por nuestro equipo de brigadas.
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

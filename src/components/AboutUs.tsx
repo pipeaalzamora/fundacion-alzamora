@@ -106,8 +106,8 @@ export default function AboutUs({ region }: AboutUsProps) {
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">Acreditación Oficial</span>
-              <p className="text-xs text-slate-600 font-medium font-sans mt-0.5">Sometidos a auditorías externas anuales para asegurar la máxima transparencia de tus recursos.</p>
+              <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">Rendición de Cuentas</span>
+              <p className="text-xs text-slate-600 font-medium font-sans mt-0.5">Publicamos el detalle de ingresos y gastos, y puedes solicitar el registro de donaciones y entregas.</p>
             </div>
           </div>
         </div>
