@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Lock,
   LogOut,
+  LogIn,
   ShieldCheck,
   PackageCheck,
   Receipt,
@@ -13,6 +14,15 @@ import {
   Plus,
   XCircle,
 } from 'lucide-react';
+import { onAuthStateChanged, type User } from 'firebase/auth';
+import {
+  auth,
+  hasFirebase,
+  ADMIN_EMAIL,
+  signInWithGoogle,
+  signOutAdmin,
+  getIdToken,
+} from '../lib/firebase';
 import {
   CreateDeliveryInput,
   CreateExpenseInput,
@@ -89,11 +99,158 @@ const statusBadge = (status: string) => {
 // ============================================================
 
 export default function AdminPanel() {
+  // Si Firebase está configurado, usamos el login con Google (solo la cuenta
+  // autorizada entra). Si no, mantenemos el fallback de token manual para
+  // desarrollo.
+  return hasFirebase ? <FirebaseAdminPanel /> : <TokenAdminPanel />;
+}
+
+// ============================================================
+// Acceso con Firebase Authentication (login con Google)
+// ============================================================
+
+function FirebaseAdminPanel() {
+  const [user, setUser] = useState<User | null>(null);
+  const [checking, setChecking] = useState<boolean>(true);
+  const [authError, setAuthError] = useState<string>('');
+  const [signingIn, setSigningIn] = useState<boolean>(false);
+
+  // Reaccionamos a los cambios de sesión. Solo el email autorizado entra;
+  // cualquier otra cuenta se cierra inmediatamente.
+  useEffect(() => {
+    if (!auth) return;
+    const unsubscribe = onAuthStateChanged(auth, (nextUser) => {
+      setChecking(false);
+      if (!nextUser) {
+        setUser(null);
+        return;
+      }
+      const email = (nextUser.email || '').toLowerCase();
+      if (email !== ADMIN_EMAIL) {
+        setAuthError('Cuenta no autorizada. Solo el administrador puede ingresar.');
+        setUser(null);
+        void signOutAdmin();
+        return;
+      }
+      setAuthError('');
+      setUser(nextUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleGoogleLogin = async () => {
+    setAuthError('');
+    setSigningIn(true);
+    try {
+      await signInWithGoogle();
+      // El resto (validación de email / entrada) lo maneja onAuthStateChanged.
+    } catch {
+      setAuthError('No pudimos iniciar sesión con Google. Inténtalo nuevamente.');
+    } finally {
+      setSigningIn(false);
+    }
+  };
+
+  const handleLogout = () => {
+    void signOutAdmin();
+    setUser(null);
+    setAuthError('');
+  };
+
+  // Cierre de sesión forzado ante un 401/403 en una llamada admin.
+  const handleUnauthorized = () => {
+    void signOutAdmin();
+    setUser(null);
+    setAuthError('Tu sesión expiró o no tiene permisos. Inicia sesión nuevamente.');
+  };
+
+  // Siempre pedimos un ID token fresco a Firebase justo antes de cada llamada.
+  const getToken = useCallback(async () => {
+    if (!auth || !auth.currentUser) {
+      throw new ApiError('Sesión no válida. Inicia sesión nuevamente.', 401);
+    }
+    return getIdToken(auth.currentUser);
+  }, []);
+
+  // Mientras Firebase resuelve el estado inicial de la sesión.
+  if (checking) {
+    return (
+      <div className="max-w-md mx-auto px-4 sm:px-6 py-20 animate-fade-in">
+        <div className="flex items-center justify-center gap-2 text-slate-400 text-sm">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Verificando sesión...
+        </div>
+      </div>
+    );
+  }
+
+  // Vista no autenticada: botón de inicio de sesión con Google.
+  if (!user) {
+    return (
+      <div className="max-w-md mx-auto px-4 sm:px-6 py-16 animate-fade-in">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-md overflow-hidden">
+          <div className="flex items-center gap-2 p-5 text-white bg-brand-blue">
+            <Lock className="w-5 h-5 text-brand-yellow" />
+            <h3 className="text-lg font-bold font-display">Acceso Administración</h3>
+          </div>
+          <div className="p-6 space-y-4">
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Esta sección es privada. Inicia sesión con la cuenta de Google autorizada
+              para gestionar entregas, gastos y suscripciones de socios.
+            </p>
+
+            {authError && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-xl text-xs font-semibold flex items-start gap-2 animate-scale-up">
+                <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                <span>{authError}</span>
+              </div>
+            )}
+
+            <button
+              id="admin-google-login-button"
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={signingIn}
+              className="w-full bg-brand-blue hover:bg-blue-900 disabled:opacity-50 text-white font-bold py-3 rounded-xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2"
+            >
+              {signingIn ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Conectando...
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-4 h-4" />
+                  Iniciar sesión con Google
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Vista autenticada.
+  return (
+    <AdminDashboard
+      getToken={getToken}
+      onLogout={handleLogout}
+      onUnauthorized={handleUnauthorized}
+      adminEmail={user.email || undefined}
+    />
+  );
+}
+
+// ============================================================
+// Acceso con token manual (fallback de desarrollo, sin Firebase)
+// ============================================================
+
+function TokenAdminPanel() {
   const [token, setToken] = useState<string>('');
   const [tokenInput, setTokenInput] = useState<string>('');
   const [authError, setAuthError] = useState<string>('');
   const [isAuthenticating, setIsAuthenticating] = useState<boolean>(false);
-  const [section, setSection] = useState<AdminSection>('entregas');
 
   // Recuperamos el token guardado en sessionStorage al montar.
   useEffect(() => {
@@ -132,8 +289,9 @@ export default function AdminPanel() {
     sessionStorage.removeItem(TOKEN_KEY);
     setToken('');
     setTokenInput('');
-    setSection('entregas');
   };
+
+  const getToken = useCallback(async () => token, [token]);
 
   // ---------- Vista no autenticada: login ----------
   if (!token) {
@@ -196,6 +354,27 @@ export default function AdminPanel() {
   }
 
   // ---------- Vista autenticada ----------
+  return <AdminDashboard getToken={getToken} onLogout={handleLogout} onUnauthorized={handleLogout} />;
+}
+
+// ============================================================
+// Panel autenticado (compartido por ambos modos de acceso)
+// ============================================================
+
+interface AdminDashboardProps {
+  /** Devuelve un token válido (ID token fresco de Firebase o token manual). */
+  getToken: () => Promise<string>;
+  /** Cierra la sesión desde el botón del encabezado. */
+  onLogout: () => void;
+  /** Se invoca ante un 401/403 en cualquier llamada admin. */
+  onUnauthorized: () => void;
+  /** Email del admin autenticado (solo en modo Firebase). */
+  adminEmail?: string;
+}
+
+function AdminDashboard({ getToken, onLogout, onUnauthorized, adminEmail }: AdminDashboardProps) {
+  const [section, setSection] = useState<AdminSection>('entregas');
+
   const sections: { id: AdminSection; label: string; icon: React.ReactNode }[] = [
     { id: 'entregas', label: 'Entregas', icon: <PackageCheck className="w-4 h-4" /> },
     { id: 'gastos', label: 'Gastos', icon: <Receipt className="w-4 h-4" /> },
@@ -219,14 +398,22 @@ export default function AdminPanel() {
             </p>
           </div>
         </div>
-        <button
-          id="admin-logout-button"
-          onClick={handleLogout}
-          className="self-start sm:self-auto inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-brand-red bg-slate-100 hover:bg-red-50 px-4 py-2.5 rounded-xl border border-slate-200 transition-all"
-        >
-          <LogOut className="w-4 h-4" />
-          Salir
-        </button>
+        <div className="self-start sm:self-auto flex flex-col items-start sm:items-end gap-1.5">
+          {adminEmail && (
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+              {adminEmail}
+            </span>
+          )}
+          <button
+            id="admin-logout-button"
+            onClick={onLogout}
+            className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-brand-red bg-slate-100 hover:bg-red-50 px-4 py-2.5 rounded-xl border border-slate-200 transition-all"
+          >
+            <LogOut className="w-4 h-4" />
+            {adminEmail ? 'Cerrar sesión' : 'Salir'}
+          </button>
+        </div>
       </div>
 
       {/* Pestañas */}
@@ -252,10 +439,14 @@ export default function AdminPanel() {
       </div>
 
       {/* Contenido de la pestaña */}
-      {section === 'entregas' && <DeliveriesSection token={token} onUnauthorized={handleLogout} />}
-      {section === 'gastos' && <ExpensesSection token={token} onUnauthorized={handleLogout} />}
+      {section === 'entregas' && (
+        <DeliveriesSection getToken={getToken} onUnauthorized={onUnauthorized} />
+      )}
+      {section === 'gastos' && (
+        <ExpensesSection getToken={getToken} onUnauthorized={onUnauthorized} />
+      )}
       {section === 'suscripciones' && (
-        <SubscriptionsSection token={token} onUnauthorized={handleLogout} />
+        <SubscriptionsSection getToken={getToken} onUnauthorized={onUnauthorized} />
       )}
     </div>
   );
@@ -266,11 +457,16 @@ export default function AdminPanel() {
 // ============================================================
 
 interface SectionProps {
-  token: string;
+  /** Devuelve un token válido y fresco para cada llamada admin. */
+  getToken: () => Promise<string>;
   onUnauthorized: () => void;
 }
 
-function DeliveriesSection({ token, onUnauthorized }: SectionProps) {
+/** True si el error corresponde a una sesión inválida (401) o sin permisos (403). */
+const isAuthError = (err: unknown): boolean =>
+  err instanceof ApiError && (err.status === 401 || err.status === 403);
+
+function DeliveriesSection({ getToken, onUnauthorized }: SectionProps) {
   const [items, setItems] = useState<Delivery[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [listError, setListError] = useState<string>('');
@@ -289,10 +485,10 @@ function DeliveriesSection({ token, onUnauthorized }: SectionProps) {
     setLoading(true);
     setListError('');
     try {
-      const data = await adminListDeliveries(token);
+      const data = await adminListDeliveries(await getToken());
       setItems(Array.isArray(data) ? data : []);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
+      if (isAuthError(err)) {
         onUnauthorized();
         return;
       }
@@ -302,7 +498,7 @@ function DeliveriesSection({ token, onUnauthorized }: SectionProps) {
     } finally {
       setLoading(false);
     }
-  }, [token, onUnauthorized]);
+  }, [getToken, onUnauthorized]);
 
   useEffect(() => {
     load();
@@ -333,7 +529,7 @@ function DeliveriesSection({ token, onUnauthorized }: SectionProps) {
 
     setSubmitting(true);
     try {
-      await adminCreateDelivery(token, input);
+      await adminCreateDelivery(await getToken(), input);
       setSuccess('Entrega registrada correctamente.');
       setQuantity('');
       setCommune('');
@@ -342,7 +538,7 @@ function DeliveriesSection({ token, onUnauthorized }: SectionProps) {
       await load();
       setTimeout(() => setSuccess(''), 4000);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
+      if (isAuthError(err)) {
         onUnauthorized();
         return;
       }
@@ -404,7 +600,7 @@ function DeliveriesSection({ token, onUnauthorized }: SectionProps) {
                 <input
                   id="delivery-commune"
                   type="text"
-                  placeholder="Ej. Santiago Centro"
+                  placeholder="Ej. Valparaíso"
                   value={commune}
                   onChange={(e) => setCommune(e.target.value)}
                   className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue"
@@ -535,7 +731,7 @@ function DeliveriesSection({ token, onUnauthorized }: SectionProps) {
 // Sección: Gastos
 // ============================================================
 
-function ExpensesSection({ token, onUnauthorized }: SectionProps) {
+function ExpensesSection({ getToken, onUnauthorized }: SectionProps) {
   const [items, setItems] = useState<Expense[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [listError, setListError] = useState<string>('');
@@ -554,10 +750,10 @@ function ExpensesSection({ token, onUnauthorized }: SectionProps) {
     setLoading(true);
     setListError('');
     try {
-      const data = await adminListExpenses(token);
+      const data = await adminListExpenses(await getToken());
       setItems(Array.isArray(data) ? data : []);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
+      if (isAuthError(err)) {
         onUnauthorized();
         return;
       }
@@ -565,7 +761,7 @@ function ExpensesSection({ token, onUnauthorized }: SectionProps) {
     } finally {
       setLoading(false);
     }
-  }, [token, onUnauthorized]);
+  }, [getToken, onUnauthorized]);
 
   useEffect(() => {
     load();
@@ -596,7 +792,7 @@ function ExpensesSection({ token, onUnauthorized }: SectionProps) {
 
     setSubmitting(true);
     try {
-      await adminCreateExpense(token, input);
+      await adminCreateExpense(await getToken(), input);
       setSuccess('Gasto registrado correctamente.');
       setAmount('');
       setDescription('');
@@ -605,7 +801,7 @@ function ExpensesSection({ token, onUnauthorized }: SectionProps) {
       await load();
       setTimeout(() => setSuccess(''), 4000);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
+      if (isAuthError(err)) {
         onUnauthorized();
         return;
       }
@@ -796,7 +992,7 @@ function ExpensesSection({ token, onUnauthorized }: SectionProps) {
 // Sección: Suscripciones
 // ============================================================
 
-function SubscriptionsSection({ token, onUnauthorized }: SectionProps) {
+function SubscriptionsSection({ getToken, onUnauthorized }: SectionProps) {
   const [items, setItems] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [listError, setListError] = useState<string>('');
@@ -808,10 +1004,10 @@ function SubscriptionsSection({ token, onUnauthorized }: SectionProps) {
     setLoading(true);
     setListError('');
     try {
-      const data = await adminListSubscriptions(token);
+      const data = await adminListSubscriptions(await getToken());
       setItems(Array.isArray(data) ? data : []);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
+      if (isAuthError(err)) {
         onUnauthorized();
         return;
       }
@@ -821,7 +1017,7 @@ function SubscriptionsSection({ token, onUnauthorized }: SectionProps) {
     } finally {
       setLoading(false);
     }
-  }, [token, onUnauthorized]);
+  }, [getToken, onUnauthorized]);
 
   useEffect(() => {
     load();
@@ -840,12 +1036,12 @@ function SubscriptionsSection({ token, onUnauthorized }: SectionProps) {
     setSuccess('');
     setCancellingId(sub.id);
     try {
-      await adminCancelSubscription(token, sub.id);
+      await adminCancelSubscription(await getToken(), sub.id);
       setSuccess(`Suscripción de ${sub.donorName} cancelada.`);
       await load();
       setTimeout(() => setSuccess(''), 4000);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
+      if (isAuthError(err)) {
         onUnauthorized();
         return;
       }

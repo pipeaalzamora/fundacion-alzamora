@@ -1,5 +1,3 @@
-export type Region = 'general' | 'chile';
-
 export interface VolunteerSignup {
   id: string;
   fullName: string;
@@ -7,7 +5,6 @@ export interface VolunteerSignup {
   email: string;
   areasInterest: string[];
   message: string;
-  region: Region;
   timestamp: string;
 }
 
@@ -21,7 +18,6 @@ export interface NeedReport {
   description: string;
   contactName?: string;
   contactPhone?: string;
-  region: Region;
   status: 'pendiente' | 'atendido' | 'en_ruta';
   timestamp: string;
 }
@@ -29,10 +25,9 @@ export interface NeedReport {
 export interface Donation {
   id: string;
   amount: number;
-  currency: 'CLP' | 'EUR' | 'USD';
+  currency: 'CLP' | 'USD';
   donorName: string;
   email: string;
-  region: Region;
   impactText: string;
   isMonthly: boolean;
   timestamp: string;
@@ -47,8 +42,10 @@ export interface Route {
   mealsDelivered: number;
   description: string;
   status: 'activo' | 'completado';
-  latitudePercent: number; // For plotting on stylized map
-  longitudePercent: number; // For plotting on stylized map
+  latitudePercent: number; // Para el mapa estilizado (fallback sin API key)
+  longitudePercent: number; // Para el mapa estilizado (fallback sin API key)
+  lat?: number; // Coordenada real para el mapa de Google
+  lng?: number; // Coordenada real para el mapa de Google
 }
 
 export interface Story {
@@ -56,7 +53,6 @@ export interface Story {
   title: string;
   name: string;
   age?: number;
-  region: Region;
   location: string;
   quote: string;
   summary: string;

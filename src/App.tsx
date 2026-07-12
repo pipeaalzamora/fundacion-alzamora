@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 
 // Types
-import { Region, TransparencyStats } from './types';
+import { TransparencyStats } from './types';
 
 // API
 import { getStats } from './lib/api';
@@ -25,7 +25,6 @@ import AdminPanel from './components/AdminPanel';
 import { IMAGES, LOGO_URL, STORIES } from './data';
 
 export default function App() {
-  const [region, setRegion] = useState<Region>('chile'); // Defaulting to Chile (high-fidelity screens focus on Chile)
   const [currentTab, setCurrentTab] = useState<string>('inicio');
   const [isDonateOpen, setIsDonateOpen] = useState<boolean>(false);
   const [preselectedProgramTitle, setPreselectedProgramTitle] = useState<string | undefined>(undefined);
@@ -116,8 +115,6 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentTab]);
 
-  const isChile = region === 'chile';
-
   return (
     <div className="min-h-screen bg-brand-cream flex flex-col font-sans selection:bg-brand-blue/10 selection:text-brand-blue">
       
@@ -125,8 +122,6 @@ export default function App() {
       <Navbar 
         currentTab={currentTab} 
         setCurrentTab={setCurrentTab} 
-        region={region} 
-        setRegion={setRegion} 
         onOpenDonate={() => setIsDonateOpen(true)}
       />
 
@@ -241,7 +236,7 @@ export default function App() {
               {/* Overlay graphics */}
               <div className="absolute inset-0 z-0">
                 <img 
-                  src={isChile ? IMAGES.heroGeneral : IMAGES.heroGeneral} 
+                  src={IMAGES.heroGeneral} 
                   alt="Fundación Alzamora Calle" 
                   className="w-full h-full object-cover opacity-25"
                   referrerPolicy="no-referrer"
@@ -256,21 +251,15 @@ export default function App() {
                 <div className="lg:col-span-7 space-y-6">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-brand-yellow/15 text-brand-yellow border border-brand-yellow/30">
                     <Sparkles className="w-3.5 h-3.5 fill-brand-yellow" />
-                    {isChile ? 'Sede Oficial Chile' : 'Transformando vidas desde 2018'}
+                    Quinta Región de Valparaíso
                   </span>
                   
                   <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold font-display leading-tight tracking-tight text-white">
-                    {isChile 
-                      ? 'Transformando vidas en las calles de Chile con amor y fe'
-                      : 'Transformando vidas en la calle con amor y fe'
-                    }
+                    Transformando vidas en las calles de Valparaíso con amor y fe
                   </h1>
 
                   <p className="text-base sm:text-lg text-slate-300 font-sans max-w-2xl leading-relaxed">
-                    {isChile 
-                      ? 'Salimos al encuentro de nuestros hermanos en situación de calle en Santiago y Valparaíso, entregando desayunos calientes, kits de abrigo y la palabra esperanzadora del Evangelio.'
-                      : 'Acompañamos a personas sin hogar en sus noches más frías, entregando alimentación nutritiva, elementos de aseo personal y el abrigo de una comunidad de fe activa.'
-                    }
+                    Salimos al encuentro de nuestros hermanos en situación de calle en Valparaíso y Viña del Mar, entregando desayunos calientes, kits de abrigo y la palabra esperanzadora del Evangelio.
                   </p>
 
                   <div className="flex flex-wrap gap-4 pt-2">
@@ -280,14 +269,14 @@ export default function App() {
                       className="bg-brand-red text-white hover:bg-red-600 font-bold px-8 py-3.5 rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
                     >
                       <Heart className="w-5 h-5 fill-white" />
-                      <span>{isChile ? 'Donar un Kit de Invierno' : 'Donar Ahora'}</span>
+                      <span>Donar un Kit de Invierno</span>
                     </button>
                     <button
                       id="hero-volunteers-cta"
                       onClick={() => setCurrentTab('voluntarios')}
                       className="bg-white/10 hover:bg-white/20 text-white font-bold px-6 py-3.5 rounded-xl transition-all border border-white/25 flex items-center gap-1.5"
                     >
-                      <span>{isChile ? 'Sé Voluntario de Calle' : 'Ser un Voluntario'}</span>
+                      <span>Sé Voluntario de Calle</span>
                       <ArrowRight className="w-4.5 h-4.5" />
                     </button>
                   </div>
@@ -302,7 +291,7 @@ export default function App() {
                     </div>
 
                     <h4 className="text-lg font-bold font-display text-slate-900 leading-snug">
-                      {isChile ? 'Rutas Activas en Santiago Centro' : 'Asistencia Nocturna Activa'}
+                      Rutas Activas en Valparaíso
                     </h4>
 
                     <div className="space-y-3">
@@ -319,7 +308,7 @@ export default function App() {
                           <Compass className="w-4 h-4 text-brand-red" />
                           <span className="text-xs font-semibold">Sectores cubiertos</span>
                         </div>
-                        <span className="text-sm font-bold font-mono text-slate-800">Alameda, Estación Central</span>
+                        <span className="text-sm font-bold font-mono text-slate-800">Plaza Sotomayor, Puerto</span>
                       </div>
                     </div>
 
@@ -428,7 +417,7 @@ export default function App() {
                   <div>
                     <h4 className="text-base font-bold text-slate-800 font-display">Sé un Voluntario de Calle</h4>
                     <p className="text-xs text-slate-500 mt-1 font-sans leading-relaxed">
-                      Únete a nuestras rutas matutinas o nocturnas en Santiago y Valparaíso. Regala unas horas para escuchar y servir.
+                      Únete a nuestras rutas matutinas o nocturnas en Valparaíso y Viña del Mar. Regala unas horas para escuchar y servir.
                     </p>
                   </div>
                   <button
@@ -573,14 +562,12 @@ export default function App() {
 
         {currentTab === 'programas' && (
           <Programs 
-            region={region} 
             onSelectParticipate={handleSelectParticipate}
           />
         )}
 
         {currentTab === 'voluntarios' && (
           <Volunteers 
-            region={region} 
             preselectedProgramTitle={preselectedProgramTitle}
             onClearPreselection={() => setPreselectedProgramTitle(undefined)}
           />
@@ -588,17 +575,16 @@ export default function App() {
 
         {currentTab === 'historias' && (
           <Stories 
-            region={region} 
             onOpenDonate={() => setIsDonateOpen(true)}
           />
         )}
 
         {currentTab === 'nosotros' && (
-          <AboutUs region={region} />
+          <AboutUs />
         )}
 
         {currentTab === 'alerta' && (
-          <NeedReporter region={region} />
+          <NeedReporter />
         )}
 
         {currentTab === 'admin' && (
@@ -611,12 +597,10 @@ export default function App() {
       <DonationModal 
         isOpen={isDonateOpen} 
         onClose={() => setIsDonateOpen(false)} 
-        region={region}
       />
 
       {/* Standard brand footer */}
       <Footer 
-        region={region} 
         onOpenDonate={() => setIsDonateOpen(true)}
         setCurrentTab={setCurrentTab}
       />

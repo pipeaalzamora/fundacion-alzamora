@@ -1,4 +1,4 @@
-import { Story, Route, Region } from './types';
+import { Story, Route } from './types';
 
 // TODO: Las imágenes alojadas en lh3.googleusercontent.com/aida provienen de
 // Google AI Studio y son URLs TEMPORALES que van a expirar (dejarán de cargar).
@@ -34,104 +34,56 @@ export interface ProgramDetails {
   scheduleDetails: string;
 }
 
-export const PROGRAMS: Record<Region, ProgramDetails[]> = {
-  general: [
-    {
-      id: "desayunos",
-      title: "Desayunos Solidarios",
-      description: "Entregamos desayunos calientes, nutritivos y una sonrisa al inicio de cada jornada en las calles de Madrid, Barcelona y Santiago.",
-      fullDescription: "Nuestro programa insignia moviliza a decenas de voluntarios cada mañana para preparar café, leche calienta, pan fresco y frutas. Más allá del alimento material, brindamos un espacio de escucha activa, dignidad y calor humano a quienes viven a la intemperie.",
-      imageUrl: IMAGES.breakfastFood,
-      iconName: "Coffee",
-      stats: "3.500 desayunos al mes",
-      buttonText: "Participar",
-      scheduleDetails: "Lunes, Miércoles y Viernes de 07:00 a 09:30"
-    },
-    {
-      id: "palabra_vida",
-      title: "Palabra de Vida",
-      description: "Acompañamiento espiritual y lectura de Biblias que fortalece la fe y la esperanza de quienes se sienten desamparados.",
-      fullDescription: "Creemos firmemente que el ser humano no solo vive de pan. Ofrecemos refugio espiritual, círculos de lectura bíblica compartida, oración sincera y orientación moral. Respetamos la libertad de todos y acogemos a quienes buscan consuelo espiritual con amor y fe.",
-      imageUrl: IMAGES.bibleReading,
-      iconName: "BookOpen",
-      stats: "150 encuentros grupales",
-      buttonText: "Participar",
-      scheduleDetails: "Martes y Sábados de 18:30 a 20:30"
-    },
-    {
-      id: "dignidad",
-      title: "Kit de Dignidad",
-      description: "Suministro de artículos esenciales de higiene y abrigo para contrarrestar las inclemencias del clima y restaurar el bienestar básico.",
-      fullDescription: "Distribución de mochilas que incluyen: jabón neutro, cepillo y pasta dental, toallas húmedas, desodorante, calcetines térmicos de invierno, mantas impermeables y linternas. Un paso elemental hacia la sanidad, la prevención y la autoestima personal.",
-      imageUrl: IMAGES.dignityKit,
-      iconName: "HeartHandshake",
-      stats: "1.200 kits entregados",
-      buttonText: "Participar",
-      scheduleDetails: "Jueves y Domingos durante las rutas nocturnas"
-    }
-  ],
-  chile: [
-    {
-      id: "desayunos_cl",
-      title: "Desayunos en Santiago Centro",
-      description: "Rutas de alimentación matutina entregando café caliente, sándwiches de jamón/queso y apoyo emocional en el centro histórico de Santiago.",
-      fullDescription: "Operamos desde nuestra base de acopio central, saliendo a las 06:45 AM en brigadas de calle. Cubrimos ejes estratégicos como Alameda, Estación Central, Mapocho y Avenida Matta, llevando consuelo espiritual, pan fresco y raciones de abrigo diarias.",
-      imageUrl: IMAGES.breakfastFood,
-      iconName: "Coffee",
-      stats: "1.500 comidas servidas al mes",
-      buttonText: "Participar",
-      scheduleDetails: "Martes y Jueves a las 07:00 AM"
-    },
-    {
-      id: "ruta_calle_cl",
-      title: "Ruta Calle Valparaíso y Viña",
-      description: "Acompañamiento y alimentación nocturna en los cerros y plan de Valparaíso para personas en extrema vulnerabilidad.",
-      fullDescription: "Recorremos los puntos de calle más complejos de la Quinta Región. Enfocamos nuestro esfuerzo en las personas mayores y familias con niños que pernoctan en plazas o bajo puentes, asistiéndolos con frazadas, sopa caliente, café y oración.",
-      imageUrl: IMAGES.volunteersServing,
-      iconName: "Map",
-      stats: "80 personas refugiadas apoyadas",
-      buttonText: "Participar",
-      scheduleDetails: "Miércoles y Sábados a las 20:00 PM"
-    },
-    {
-      id: "kit_invierno_cl",
-      title: "Dona un Kit de Invierno",
-      description: "Campaña intensiva en Chile para proveer parkas impermeables, gorros de lana, sacos de dormir de alta montaña y calcetines gruesos.",
-      fullDescription: "El invierno chileno en la calle es sumamente duro y húmedo. Proveemos sacos de dormir térmicos clasificados para resistir temperaturas bajo cero, calzado impermeable y buzos térmicos para disminuir el riesgo de hipotermia extrema.",
-      imageUrl: IMAGES.dignityKit,
-      iconName: "Flame",
-      stats: "950 personas abrigadas",
-      buttonText: "Participar",
-      scheduleDetails: "Campaña Activa Mayo a Septiembre"
-    }
-  ]
-};
+// Único conjunto de programas, enfocado en la Quinta Región de Valparaíso.
+export const PROGRAMS: ProgramDetails[] = [
+  {
+    id: "desayunos_valpo",
+    title: "Desayunos en Valparaíso",
+    description: "Rutas de alimentación matutina entregando café caliente, sándwiches y apoyo emocional en el plan y los cerros de Valparaíso.",
+    fullDescription: "Operamos desde nuestra base de acopio, saliendo temprano en brigadas de calle. Cubrimos puntos estratégicos como Plaza Sotomayor, Plaza Victoria, Avenida Argentina y el sector puerto, llevando consuelo espiritual, pan fresco y raciones de abrigo diarias.",
+    imageUrl: IMAGES.breakfastFood,
+    iconName: "Coffee",
+    stats: "1.500 comidas servidas al mes",
+    buttonText: "Participar",
+    scheduleDetails: "Martes y Jueves a las 07:00 AM"
+  },
+  {
+    id: "ruta_calle_valpo_vina",
+    title: "Ruta Calle Valparaíso y Viña",
+    description: "Acompañamiento y alimentación nocturna en los cerros y el plan de Valparaíso y Viña del Mar para personas en extrema vulnerabilidad.",
+    fullDescription: "Recorremos los puntos de calle más complejos de la Quinta Región. Enfocamos nuestro esfuerzo en las personas mayores y familias con niños que pernoctan en plazas o bajo puentes, asistiéndolos con frazadas, sopa caliente, café y oración.",
+    imageUrl: IMAGES.volunteersServing,
+    iconName: "Map",
+    stats: "80 personas refugiadas apoyadas",
+    buttonText: "Participar",
+    scheduleDetails: "Miércoles y Sábados a las 20:00 PM"
+  },
+  {
+    id: "kit_invierno_valpo",
+    title: "Dona un Kit de Invierno",
+    description: "Campaña intensiva en la Quinta Región para proveer parkas impermeables, gorros de lana, sacos de dormir y calcetines gruesos.",
+    fullDescription: "El invierno costero en Valparaíso y Viña del Mar es húmedo y frío. Proveemos sacos de dormir térmicos, calzado impermeable y buzos térmicos para disminuir el riesgo de hipotermia extrema en quienes viven en la calle.",
+    imageUrl: IMAGES.dignityKit,
+    iconName: "Flame",
+    stats: "950 personas abrigadas",
+    buttonText: "Participar",
+    scheduleDetails: "Campaña Activa Mayo a Septiembre"
+  },
+  {
+    id: "palabra_vida_valpo",
+    title: "Palabra de Vida",
+    description: "Acompañamiento espiritual y entrega de Biblias que fortalece la fe y la esperanza de quienes se sienten desamparados.",
+    fullDescription: "Creemos firmemente que el ser humano no solo vive de pan. Ofrecemos refugio espiritual, círculos de lectura bíblica compartida, oración sincera y orientación en las rutas de Valparaíso y Viña del Mar. Respetamos la libertad de todos y acogemos con amor y fe a quienes buscan consuelo.",
+    imageUrl: IMAGES.bibleReading,
+    iconName: "BookOpen",
+    stats: "150 encuentros grupales",
+    buttonText: "Participar",
+    scheduleDetails: "Martes y Sábados de 18:30 a 20:30"
+  }
+];
 
+// Rutas de calle de la Quinta Región (Valparaíso y Viña del Mar).
 export const CHILE_ROUTES: Route[] = [
-  {
-    id: "route-stgo-alameda",
-    name: "Eje Alameda - Estación Central",
-    city: "Santiago",
-    schedule: "Lunes y Miércoles 07:00 AM",
-    volunteersCount: 14,
-    mealsDelivered: 120,
-    description: "Cubre desde Plaza Baquedano, Alameda central, paraderos de bus y los alrededores de Estación Central.",
-    status: "activo",
-    latitudePercent: 42,
-    longitudePercent: 48
-  },
-  {
-    id: "route-stgo-mapocho",
-    name: "Ruta Vega Central y Río Mapocho",
-    city: "Santiago",
-    schedule: "Viernes 07:00 AM",
-    volunteersCount: 8,
-    mealsDelivered: 85,
-    description: "Recorrido por las riberas del Río Mapocho, sector del Mercado Central y las inmediaciones de la Vega Central.",
-    status: "activo",
-    latitudePercent: 36,
-    longitudePercent: 54
-  },
   {
     id: "route-valpo-puerto",
     name: "Valparaíso Plan y Puerto",
@@ -141,20 +93,38 @@ export const CHILE_ROUTES: Route[] = [
     mealsDelivered: 95,
     description: "Ruta nocturna partiendo de Plaza Sotomayor, recorriendo calles del puerto, Plaza Victoria y Avenida Argentina.",
     status: "activo",
-    latitudePercent: 58,
-    longitudePercent: 35
+    latitudePercent: 46,
+    longitudePercent: 40,
+    lat: -33.0360,
+    lng: -71.6296
   },
   {
     id: "route-valpo-cerros",
-    name: "Viña del Mar - Estero y Marga Marga",
+    name: "Cerros de Valparaíso (Alegre y Concepción)",
+    city: "Valparaíso",
+    schedule: "Martes 07:00 AM",
+    volunteersCount: 8,
+    mealsDelivered: 70,
+    description: "Recorrido matutino por los cerros Alegre y Concepción, entregando desayunos calientes y abrigo a personas en situación de calle.",
+    status: "activo",
+    latitudePercent: 40,
+    longitudePercent: 55,
+    lat: -33.0413,
+    lng: -71.6280
+  },
+  {
+    id: "route-vina-estero",
+    name: "Viña del Mar - Estero Marga Marga",
     city: "Viña del Mar",
     schedule: "Jueves 19:30 PM",
     volunteersCount: 6,
     mealsDelivered: 50,
-    description: "Acompañamiento a personas asentadas bajo los puentes del Estero Marga Marga e inmediaciones del terminal de buses.",
+    description: "Acompañamiento a personas asentadas bajo los puentes del Estero Marga Marga e inmediaciones del terminal de buses de Viña del Mar.",
     status: "activo",
-    latitudePercent: 64,
-    longitudePercent: 42
+    latitudePercent: 60,
+    longitudePercent: 62,
+    lat: -33.0246,
+    lng: -71.5518
   }
 ];
 
@@ -164,24 +134,22 @@ export const STORIES: Story[] = [
     title: "El milagro de Don Carlos",
     name: "Don Carlos Fuentes",
     age: 58,
-    region: "chile",
-    location: "Estación Central, Santiago",
+    location: "Plan de Valparaíso",
     quote: "La Fundación Alzamora no solo me trajo un sándwich caliente; me trajo de vuelta las ganas de vivir y la palabra de Dios.",
     summary: "Vivió 6 años en la calle tras perder su empleo y su familia. El apoyo continuo y el afecto de los voluntarios le permitieron iniciar su rehabilitación.",
-    fullStory: "Carlos llegó a las calles de Santiago tras una profunda depresión. Pasó inviernos durísimos durmiendo en cartones. Una mañana de invierno de 2024, el equipo de la Ruta de Desayunos de la Fundación Alzamora conversó con él, le entregó un abrigo y compartieron una oración. Ese fue el punto de inflexión. Sintiéndose valorado y acompañado por la fe, aceptó ayuda médica y hoy trabaja como conserje, asistiendo ahora como voluntario de la misma fundación los fines de semana.",
+    fullStory: "Carlos llegó a las calles de Valparaíso tras una profunda depresión. Pasó inviernos durísimos durmiendo en cartones en el plan de la ciudad. Una mañana de invierno de 2024, el equipo de la Ruta de Desayunos de la Fundación Alzamora conversó con él, le entregó un abrigo y compartieron una oración. Ese fue el punto de inflexión. Sintiéndose valorado y acompañado por la fe, aceptó ayuda médica y hoy trabaja como conserje, asistiendo ahora como voluntario de la misma fundación los fines de semana.",
     imageUrl: IMAGES.volunteersServing,
     date: "Abril 2025"
   },
   {
     id: "story-2",
-    title: "La fuerza de Marta en Madrid",
+    title: "La fuerza de Marta en Viña del Mar",
     name: "Marta Jimeno",
     age: 44,
-    region: "general",
-    location: "Plaza de España, Madrid",
+    location: "Estero Marga Marga, Viña del Mar",
     quote: "Cuando estás en la calle te vuelves invisible. El Kit de Dignidad y sus palabras me recordaron que sigo siendo un ser humano.",
     summary: "Se encontró sin hogar repentinamente. Encontró en los encuentros de la Fundación Alzamora un refugio emocional y espiritual.",
-    fullStory: "Marta se vio en la indigencia debido a un desalojo injusto. Describe el frío de la calle como algo que cala hasta el alma, pero destaca que el frío de la indiferencia es peor. El programa 'Palabra de Vida' le dio un espacio para desahogarse y orar. Gracias a la bolsa de empleo de una parroquia colaboradora de la fundación, Marta consiguió una habitación de alquiler y un empleo a tiempo parcial en el sector de servicios.",
+    fullStory: "Marta se vio en la indigencia debido a un desalojo injusto y comenzó a pernoctar cerca del Estero Marga Marga, en Viña del Mar. Describe el frío de la calle como algo que cala hasta el alma, pero destaca que el frío de la indiferencia es peor. El programa 'Palabra de Vida' le dio un espacio para desahogarse y orar. Gracias a la bolsa de empleo de una iglesia colaboradora de la fundación, Marta consiguió una pieza en arriendo y un empleo a tiempo parcial en el sector de servicios.",
     imageUrl: IMAGES.bibleHand,
     date: "Diciembre 2024"
   },
@@ -190,11 +158,10 @@ export const STORIES: Story[] = [
     title: "Don Alberto y las mañanas de esperanza",
     name: "Alberto Retamal",
     age: 63,
-    region: "chile",
     location: "Puerto de Valparaíso",
     quote: "Llevo el Nuevo Testamento que me regalaron siempre en el bolsillo. Me ha salvado de la desesperanza en las noches más frías.",
     summary: "Pescador jubilado sin pensión que pernoctaba en los muelles de Valparaíso. Encontró una familia en las brigadas nocturnas.",
-    fullStory: "Don Alberto es muy conocido en el sector pesquero, pero la vejez lo dejó sin recursos. Recibe el Desayuno Solidario y participa activamente en las lecturas bíblicas junto a los contenedores del puerto. Refiere que la calidez del café y el trato respetuoso y cariñoso de los jóvenes de la Fundación es su mayor bendición semanal.",
+    fullStory: "Don Alberto es muy conocido en el sector pesquero, pero la vejez lo dejó sin recursos. Recibe el Desayuno Solidario y participa activamente en las lecturas bíblicas junto a los contenedores del puerto de Valparaíso. Refiere que la calidez del café y el trato respetuoso y cariñoso de los jóvenes de la Fundación es su mayor bendición semanal.",
     imageUrl: IMAGES.volunteersHero,
     date: "Mayo 2025"
   }

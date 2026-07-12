@@ -1,17 +1,13 @@
 import React from 'react';
 import { Heart, Mail, Phone, MapPin, Landmark, Award } from 'lucide-react';
-import { Region } from '../types';
 import { LOGO_URL } from '../data';
 
 interface FooterProps {
-  region: Region;
   onOpenDonate: () => void;
   setCurrentTab: (tab: string) => void;
 }
 
-export default function Footer({ region, onOpenDonate, setCurrentTab }: FooterProps) {
-  const isChile = region === 'chile';
-
+export default function Footer({ onOpenDonate, setCurrentTab }: FooterProps) {
   return (
     <footer className="bg-brand-navy text-slate-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
@@ -31,10 +27,7 @@ export default function Footer({ region, onOpenDonate, setCurrentTab }: FooterPr
               </span>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed font-sans">
-              {isChile 
-                ? "Una organización cristiana dedicada a servir con amor, fe y dignidad a nuestros hermanos que duermen en las calles de Chile, proveyendo alimentos, abrigo y acompañamiento espiritual."
-                : "Organización de fe que asiste de manera integral a personas sin hogar, devolviéndoles la dignidad a través de comida caliente, acompañamiento bíblico y kits de higiene."
-              }
+              Una organización cristiana dedicada a servir con amor, fe y dignidad a nuestros hermanos que duermen en las calles de la Quinta Región de Valparaíso, proveyendo alimentos, abrigo y acompañamiento espiritual.
             </p>
             <div className="flex gap-4 pt-2">
               <a href="#" className="text-slate-400 hover:text-white transition-colors" title="Facebook">
@@ -52,7 +45,7 @@ export default function Footer({ region, onOpenDonate, setCurrentTab }: FooterPr
           {/* Column 2: Navigation Links */}
           <div>
             <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4 font-display">
-              {isChile ? "Navegación" : "Quick Links"}
+              Navegación
             </h4>
             <ul className="space-y-2.5 text-xs">
               <li>
@@ -60,7 +53,7 @@ export default function Footer({ region, onOpenDonate, setCurrentTab }: FooterPr
                   onClick={() => setCurrentTab('inicio')} 
                   className="hover:text-white transition-colors text-left"
                 >
-                  {isChile ? "Inicio / Portada" : "Home"}
+                  Inicio / Portada
                 </button>
               </li>
               <li>
@@ -68,7 +61,7 @@ export default function Footer({ region, onOpenDonate, setCurrentTab }: FooterPr
                   onClick={() => setCurrentTab('programas')} 
                   className="hover:text-white transition-colors text-left"
                 >
-                  {isChile ? "Nuestros Programas" : "Our Programs"}
+                  Nuestros Programas
                 </button>
               </li>
               <li>
@@ -76,7 +69,7 @@ export default function Footer({ region, onOpenDonate, setCurrentTab }: FooterPr
                   onClick={() => setCurrentTab('voluntarios')} 
                   className="hover:text-white transition-colors text-left"
                 >
-                  {isChile ? "Únete como Voluntario" : "Volunteer With Us"}
+                  Únete como Voluntario
                 </button>
               </li>
               <li>
@@ -84,7 +77,7 @@ export default function Footer({ region, onOpenDonate, setCurrentTab }: FooterPr
                   onClick={() => setCurrentTab('historias')} 
                   className="hover:text-white transition-colors text-left"
                 >
-                  {isChile ? "Historias de Impacto" : "Impact Stories"}
+                  Historias de Impacto
                 </button>
               </li>
               <li>
@@ -92,7 +85,7 @@ export default function Footer({ region, onOpenDonate, setCurrentTab }: FooterPr
                   onClick={() => setCurrentTab('alerta')} 
                   className="hover:text-white text-red-400 transition-colors text-left font-semibold"
                 >
-                  {isChile ? "🚨 Alerta Social (Reportar)" : "🚨 Report Homeless Person"}
+                  🚨 Alerta Social (Reportar)
                 </button>
               </li>
             </ul>
@@ -101,22 +94,21 @@ export default function Footer({ region, onOpenDonate, setCurrentTab }: FooterPr
           {/* Column 3: Contact Info */}
           <div>
             <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4 font-display">
-              {isChile ? "Contacto y Sedes" : "Contact & Offices"}
+              Contacto y Sede
             </h4>
             <ul className="space-y-3 text-xs text-slate-400">
               <li className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-brand-yellow shrink-0 mt-0.5" />
+                {/* TODO: Reemplazar por la dirección real de la sede de la fundación en Valparaíso. */}
                 <span>
-                  {isChile 
-                    ? "Sede Santiago: Av. Libertador Bernardo O'Higgins 1302, Santiago Centro" 
-                    : "Sede España: Calle de Hortaleza 44, Centro, 28004 Madrid"
-                  }
+                  Sede Valparaíso: Av. Pedro Montt 1234, Valparaíso
                 </span>
               </li>
               <li className="flex items-center gap-2.5">
                 <Phone className="w-4 h-4 text-brand-yellow shrink-0" />
+                {/* TODO: Reemplazar por el teléfono real de contacto de la fundación. */}
                 <span>
-                  {isChile ? "+56 2 2489 1230" : "+34 91 522 1304"}
+                  +56 32 234 5678
                 </span>
               </li>
               <li className="flex items-center gap-2.5">
@@ -129,20 +121,17 @@ export default function Footer({ region, onOpenDonate, setCurrentTab }: FooterPr
           {/* Column 4: Tax Benefits & Seal */}
           <div className="space-y-4">
             <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4 font-display">
-              {isChile ? "Transparencia Tributaria" : "Tax Benefits"}
+              Transparencia Tributaria
             </h4>
             <div className="p-3.5 bg-white/5 border border-white/10 rounded-xl space-y-2.5">
               <div className="flex items-center gap-2 text-white">
                 <Landmark className="w-4 h-4 text-brand-yellow" />
                 <span className="text-xs font-semibold">
-                  {isChile ? "Franquicia Tributaria" : "Deducción Fiscal"}
+                  Franquicia Tributaria
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 leading-normal font-sans">
-                {isChile 
-                  ? "Las donaciones están acogidas a la Ley N° 21.015 o Ley de Donaciones Sociales, permitiendo un crédito tributario o rebaja de gasto según corresponda."
-                  : "En España, las donaciones a fundaciones del Título II disfrutan de deducciones del IRPF de hasta el 80% para los primeros 150€ donados."
-                }
+                Las donaciones están acogidas a la Ley N° 21.015 o Ley de Donaciones Sociales, permitiendo un crédito tributario o rebaja de gasto según corresponda.
               </p>
             </div>
 

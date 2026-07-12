@@ -1,18 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Award, CheckCircle, Handshake, ShieldCheck, Heart, Check, AlertCircle } from 'lucide-react';
-import { Ledger, Region } from '../types';
+import { Ledger } from '../types';
 import { IMAGES } from '../data';
 import { createVolunteer, getLedger, ApiError } from '../lib/api';
 
 interface VolunteersProps {
-  region: Region;
   preselectedProgramTitle?: string;
   onClearPreselection?: () => void;
 }
 
-export default function Volunteers({ region, preselectedProgramTitle, onClearPreselection }: VolunteersProps) {
-  const isChile = region === 'chile';
-
+export default function Volunteers({ preselectedProgramTitle, onClearPreselection }: VolunteersProps) {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -29,8 +26,8 @@ export default function Volunteers({ region, preselectedProgramTitle, onClearPre
 
   // Default volunteering categories
   const categories = [
-    { id: 'desayunos', label: isChile ? 'Desayunos Solidarios' : 'Rutas de Desayunos', desc: 'Preparación de alimentos calientes y acompañamiento matutino directo.' },
-    { id: 'lectura', label: isChile ? 'Lectura de Biblias y Oración' : 'Acompañamiento Bíblico', desc: 'Espacio de entrega espiritual, reflexión y escucha compasiva.' },
+    { id: 'desayunos', label: 'Desayunos Solidarios', desc: 'Preparación de alimentos calientes y acompañamiento matutino directo.' },
+    { id: 'lectura', label: 'Lectura de Biblias y Oración', desc: 'Espacio de entrega espiritual, reflexión y escucha compasiva.' },
     { id: 'logistica', label: 'Logística y Acopio de Bodega', desc: 'Clasificación de donaciones, empaque de Kits de Dignidad y carga.' }
   ];
 

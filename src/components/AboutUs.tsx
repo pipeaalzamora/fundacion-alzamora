@@ -1,16 +1,9 @@
 import React, { useState } from 'react';
 import { Landmark, Compass, Award, ShieldCheck, Mail, Send, CheckCircle2 } from 'lucide-react';
-import { Region } from '../types';
 import MapInteractive from './MapInteractive';
 import { IMAGES } from '../data';
 
-interface AboutUsProps {
-  region: Region;
-}
-
-export default function AboutUs({ region }: AboutUsProps) {
-  const isChile = region === 'chile';
-
+export default function AboutUs() {
   // Contact form state
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
@@ -32,7 +25,6 @@ export default function AboutUs({ region }: AboutUsProps) {
       contactEmail,
       subject,
       message,
-      region,
       timestamp: new Date().toLocaleString()
     };
 
@@ -74,7 +66,7 @@ export default function AboutUs({ region }: AboutUsProps) {
             Empezamos preparando termos de café caliente y sándwiches en nuestra propia cocina, saliendo a caminar las calles para conversar y orar con quienes se sintieran abandonados. Con el tiempo, Dios multiplicó los panes y los corazones generosos de cientos de voluntarios.
           </p>
           <p className="text-xs text-slate-600 leading-relaxed font-sans">
-            Hoy en día, la fundación cuenta con sedes activas en España (Madrid y Barcelona) y delegaciones consolidadas en Chile (Santiago y Valparaíso), sirviendo miles de desayunos y raciones de abrigo todos los meses, y llevando sobre todo la Luz y la Palabra de Dios para restaurar la fe y la autoestima de nuestros hermanos de la calle.
+            Hoy en día, la fundación concentra su labor en la Quinta Región de Valparaíso, con rutas activas en Valparaíso y Viña del Mar, sirviendo miles de desayunos y raciones de abrigo todos los meses, y llevando sobre todo la Luz y la Palabra de Dios para restaurar la fe y la autoestima de nuestros hermanos de la calle.
           </p>
 
           <div className="grid grid-cols-2 gap-4 pt-2">
@@ -118,9 +110,9 @@ export default function AboutUs({ region }: AboutUsProps) {
       <div className="space-y-4">
         <div className="text-center max-w-xl mx-auto space-y-1">
           <h3 className="text-2xl font-bold font-display text-slate-900 tracking-tight">Presencia en el Territorio</h3>
-          <p className="text-xs text-slate-500 font-sans">Visualiza las sedes globales que respaldan nuestro esfuerzo de calle diario.</p>
+          <p className="text-xs text-slate-500 font-sans">Visualiza los puntos y rutas de calle que cubrimos en Valparaíso y Viña del Mar.</p>
         </div>
-        <MapInteractive region={region} />
+        <MapInteractive />
       </div>
 
       {/* Contact Form Section */}

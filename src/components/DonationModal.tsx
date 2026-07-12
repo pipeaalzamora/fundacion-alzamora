@@ -1,17 +1,14 @@
 import React, { useState } from 'react';
 import { X, Heart, ShieldCheck, Coffee, ExternalLink, AlertCircle } from 'lucide-react';
-import { PaymentCurrency, PaymentMethod, Region } from '../types';
+import { PaymentCurrency, PaymentMethod } from '../types';
 import { createDonation, createSubscription, ApiError } from '../lib/api';
 
 interface DonationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  region: Region;
 }
 
-export default function DonationModal({ isOpen, onClose, region }: DonationModalProps) {
-  const isChile = region === 'chile';
-
+export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   // Método de pago: Webpay opera en CLP, PayPal en USD.
   const [method, setMethod] = useState<PaymentMethod>('webpay');
   const currency: PaymentCurrency = method === 'webpay' ? 'CLP' : 'USD';
@@ -67,7 +64,7 @@ export default function DonationModal({ isOpen, onClose, region }: DonationModal
       if (amt < 10000) return `Aportas ${currencySymbol}${amt.toLocaleString('es-CL')} para insumos alimentarios de la ruta de calle.`;
       if (amt >= 10000 && amt < 20000) return `Con este aporte podríamos proveer aprox. ${Math.floor(amt / 10000)} Kit(s) de Dignidad (artículos de higiene y calcetines gruesos).`;
       if (amt >= 20000 && amt < 50000) return `Con este aporte podríamos financiar aprox. ${Math.floor((amt / 20000) * 15)} desayunos calientes para personas en situación de calle.`;
-      return `Con este aporte podríamos entregar kits de invierno, sacos de dormir térmicos y desayunos de alta energía en Santiago o Valparaíso.`;
+      return `Con este aporte podríamos entregar kits de invierno, sacos de dormir térmicos y desayunos de alta energía en Valparaíso y Viña del Mar.`;
     }
     if (amt < 12) return `Aportas ${currencySymbol}${amt} para café y alimento en las rutas diarias de calle.`;
     if (amt >= 12 && amt < 25) return `Con este aporte podríamos proveer aprox. ${Math.floor(amt / 12)} Kit(s) de Dignidad (higiene y abrigo básico).`;

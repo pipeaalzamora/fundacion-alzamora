@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { APIProvider } from '@vis.gl/react-google-maps';
 import { AlertCircle, MapPin, CheckCircle2, Navigation, Phone, User, Clock, Send } from 'lucide-react';
-import { NeedType, Region } from '../types';
+import { NeedType } from '../types';
 import { createNeedReport, ApiError } from '../lib/api';
+import { GOOGLE_MAPS_API_KEY, hasGoogleMaps } from '../lib/googleMaps';
+import AddressAutocomplete from './AddressAutocomplete';
 
 interface NeedReporterProps {
-  region: Region;
   onNewReportAdded?: () => void;
 }
 
@@ -20,9 +22,7 @@ interface SessionReport {
   timestamp: string;
 }
 
-export default function NeedReporter({ region, onNewReportAdded }: NeedReporterProps) {
-  const isChile = region === 'chile';
-
+export default function NeedReporter({ onNewReportAdded }: NeedReporterProps) {
   const [sessionReports, setSessionReports] = useState<SessionReport[]>([]);
   const [location, setLocation] = useState('');
   const [cityCommune, setCityCommune] = useState('');
@@ -103,7 +103,7 @@ export default function NeedReporter({ region, onNewReportAdded }: NeedReporterP
     }
   };
 
-  return (
+  const content = (
     <div className="space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
       
       {/* Visual Header */}
@@ -112,10 +112,7 @@ export default function NeedReporter({ region, onNewReportAdded }: NeedReporterP
         <div className="relative z-10 max-w-3xl space-y-2">
           <span className="text-xs font-bold text-brand-yellow uppercase tracking-widest block">Alerta Social Activa</span>
           <h2 className="text-2xl sm:text-3xl font-bold font-display leading-tight">
-            {isChile 
-              ? 'Reporta una Necesidad en la Calle' 
-              : 'Report a Person in Need on the Street'
-            }
+            Reporta una Necesidad en la Calle
           </h2>
           <p className="text-sm text-slate-200 leading-relaxed font-sans">
             ¿Viste a alguien durmiendo a la intemperie que necesita alimentos, frazadas, abrigo o contención espiritual? Completa esta alerta de calle. Nuestro equipo de brigadas solidarias evaluará la situación y asistirá al punto en la siguiente ruta programada.
@@ -162,22 +159,31 @@ export default function NeedReporter({ region, onNewReportAdded }: NeedReporterP
                   Ubicación exacta / Punto de referencia *
                 </label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                  <input
+                  <MapPin className="absolute left-3 top-3 w-4 h-4 text-slate-400 z-10" />
+                  <AddressAutocomplete
                     id="need-location-input"
-                    type="text"
                     required
-                    placeholder="Ej. Esquina Alameda con Portugal, afuera del banco"
+                    placeholder="Ej. Plaza Sotomayor, Valparaíso"
                     value={location}
-                    onChange={(e) => setLocation(e.target.value)}
+                    onChange={setLocation}
+                    onSelect={(place) => {
+                      setLocation(place.address);
+                      // Autocompleta la comuna/ciudad si Google la detecta.
+                      if (place.commune) setCityCommune(place.commune);
+                    }}
                     className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue"
                   />
                 </div>
+                {hasGoogleMaps && (
+                  <p className="mt-1 text-[10px] text-slate-400">
+                    Empieza a escribir y elige una dirección sugerida de la Quinta Región.
+                  </p>
+                )}
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  {isChile ? "Comuna o Ciudad *" : "Ciudad o Distrito *"}
+                  Comuna o Ciudad *
                 </label>
                 <div className="relative">
                   <Navigation className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
@@ -185,7 +191,7 @@ export default function NeedReporter({ region, onNewReportAdded }: NeedReporterP
                     id="need-city-input"
                     type="text"
                     required
-                    placeholder={isChile ? "Ej. Santiago Centro, Estación Central, Valparaíso" : "Ej. Madrid Centro, Sevilla"}
+                    placeholder="Ej. Valparaíso, Viña del Mar"
                     value={cityCommune}
                     onChange={(e) => setCityCommune(e.target.value)}
                     className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue"
@@ -276,7 +282,7 @@ export default function NeedReporter({ region, onNewReportAdded }: NeedReporterP
                 ) : (
                   <>
                     <AlertCircle className="w-4 h-4 fill-white text-brand-red" />
-                    <span>{isChile ? 'Enviar Alerta de Calle' : 'Report Urgent Need'}</span>
+                    <span>Enviar Alerta de Calle</span>
                   </>
                 )}
               </button>
@@ -350,4 +356,11 @@ export default function NeedReporter({ region, onNewReportAdded }: NeedReporterP
 
     </div>
   );
+
+  // Con API key, envolvemos en APIProvider para habilitar Google Places.
+  // Sin ella, el input de dirección funciona como texto normal.
+  if (hasGoogleMaps) {
+    return <APIProvider apiKey={GOOGLE_MAPS_API_KEY}>{content}</APIProvider>;
+  }
+  return content;
 }

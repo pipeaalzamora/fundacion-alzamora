@@ -1,16 +1,13 @@
 import React, { useState } from 'react';
 import { BookOpen, Coffee, HeartHandshake, Check, ChevronRight, Clock } from 'lucide-react';
 import { PROGRAMS, ProgramDetails } from '../data';
-import { Region } from '../types';
 
 interface ProgramsProps {
-  region: Region;
   onSelectParticipate: (programTitle: string) => void;
 }
 
-export default function Programs({ region, onSelectParticipate }: ProgramsProps) {
-  const isChile = region === 'chile';
-  const programList = isChile ? PROGRAMS.chile : PROGRAMS.general;
+export default function Programs({ onSelectParticipate }: ProgramsProps) {
+  const programList = PROGRAMS;
 
   const [selectedProgram, setSelectedProgram] = useState<ProgramDetails | null>(null);
 
@@ -32,7 +29,7 @@ export default function Programs({ region, onSelectParticipate }: ProgramsProps)
       <div className="text-center max-w-3xl mx-auto space-y-3">
         <span className="text-xs font-bold text-brand-red uppercase tracking-widest block">Acción con Propósito</span>
         <h2 className="text-3xl sm:text-4xl font-bold font-display text-slate-900 tracking-tight">
-          {isChile ? 'Nuestros Programas en Chile' : 'Our Support Programs'}
+          Nuestros Programas en la Quinta Región
         </h2>
         <p className="text-sm text-slate-500 leading-relaxed font-sans">
           Cada iniciativa está diseñada para abordar tanto el bienestar corporal inmediato como el fortalecimiento emocional y de fe de las personas en situación de extrema vulnerabilidad.

@@ -1,24 +1,16 @@
 import React, { useState } from 'react';
 import { Quote, Calendar, MapPin, Heart, ArrowRight, Check } from 'lucide-react';
 import { STORIES } from '../data';
-import { Story, Region } from '../types';
+import { Story } from '../types';
 
 interface StoriesProps {
-  region: Region;
   onOpenDonate: () => void;
 }
 
-export default function Stories({ region, onOpenDonate }: StoriesProps) {
-  const isChile = region === 'chile';
-  
-  // State to filter stories
-  const [filterRegion, setFilterRegion] = useState<'all' | Region>('all');
+export default function Stories({ onOpenDonate }: StoriesProps) {
   const [activeStory, setActiveStory] = useState<Story | null>(null);
 
-  const filteredStories = STORIES.filter(story => {
-    if (filterRegion === 'all') return true;
-    return story.region === filterRegion;
-  });
+  const filteredStories = STORIES;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12 animate-fade-in">
@@ -27,36 +19,11 @@ export default function Stories({ region, onOpenDonate }: StoriesProps) {
       <div className="text-center max-w-2xl mx-auto space-y-3">
         <span className="text-xs font-bold text-brand-red uppercase tracking-widest block">Vidas Restauradas</span>
         <h2 className="text-3xl sm:text-4xl font-bold font-display text-slate-900 tracking-tight leading-none">
-          {isChile ? 'Testimonios de Esperanza' : 'Stories of Hope & Transformation'}
+          Testimonios de Esperanza
         </h2>
         <p className="text-sm text-slate-500 leading-relaxed font-sans">
-          Detrás de cada estadística hay un rostro, un nombre y una historia única que merece ser dignificada. Conoce los milagros de transformación que ocurren gracias a tu apoyo.
+          Detrás de cada estadística hay un rostro, un nombre y una historia única que merece ser dignificada. Conoce los milagros de transformación que ocurren en Valparaíso y Viña del Mar gracias a tu apoyo.
         </p>
-
-        {/* Region Filter buttons */}
-        <div className="inline-flex gap-1.5 p-1 bg-slate-100 rounded-xl mt-4">
-          <button
-            id="filter-stories-all"
-            onClick={() => setFilterRegion('all')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${filterRegion === 'all' ? 'bg-white text-brand-blue shadow-xs font-bold' : 'text-slate-500 hover:text-slate-800'}`}
-          >
-            Todos
-          </button>
-          <button
-            id="filter-stories-es"
-            onClick={() => setFilterRegion('general')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${filterRegion === 'general' ? 'bg-white text-brand-blue shadow-xs font-bold' : 'text-slate-500 hover:text-slate-800'}`}
-          >
-            Sede España
-          </button>
-          <button
-            id="filter-stories-cl"
-            onClick={() => setFilterRegion('chile')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${filterRegion === 'chile' ? 'bg-white text-brand-blue shadow-xs font-bold' : 'text-slate-500 hover:text-slate-800'}`}
-          >
-            Sede Chile 🇨🇱
-          </button>
-        </div>
       </div>
 
       {/* Grid of stories */}
@@ -76,7 +43,7 @@ export default function Stories({ region, onOpenDonate }: StoriesProps) {
                   referrerPolicy="no-referrer"
                 />
                 <div className="absolute top-3 left-3 bg-brand-blue/90 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider font-mono">
-                  {story.region === 'chile' ? '🇨🇱 Chile' : '🌐 España'}
+                  🇨🇱 Quinta Región
                 </div>
               </div>
 
